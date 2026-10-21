@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
 import gspread
 from django.conf import settings
@@ -10,6 +11,65 @@ from django.core.exceptions import ImproperlyConfigured
 logger = logging.getLogger(__name__)
 
 CACHE_KEY_SHEET = "google_sheet_records"
+
+def rgb_to_css(color_dict):
+    """Converts a Google Sheets API color dict to a css rgb(...) string."""
+    if not color_dict:
+        return ''
+    r = int(round(color_dict.get('red', 1) * 255))
+    g = int(round(color_dict.get('green', 1) * 255))
+    b = int(round(color_dict.get('blue', 1) * 255))
+    if (r, g, b) == (255, 255, 255):
+        return ''
+    return f"rgb({r},{g},{b})"
+
+
+def get_col_letter(col_idx):
+    """Converts 1-indexed column number to letter (1->A, 26->Z, 27->AA)."""
+    temp = col_idx - 1
+    letter = ''
+    while temp >= 0:
+        letter = chr((temp % 26) + 65) + letter
+        temp = (temp // 26) - 1
+    return letter
+
+
+_range_options_cache = {}
+
+
+def resolve_validation_options(cond, spreadsheet):
+    """Resolves data validation condition to a list of allowed options (dropdown)."""
+    if not cond:
+        return []
+    cond_type = cond.get('type')
+    if cond_type == 'ONE_OF_LIST':
+        return [v.get('userEnteredValue', '') for v in cond.get('values', []) if v.get('userEnteredValue')]
+    elif cond_type == 'ONE_OF_RANGE':
+        formula = cond.get('values', [{}])[0].get('userEnteredValue', '')
+        if not formula:
+            return []
+        if formula in _range_options_cache:
+            return _range_options_cache[formula]
+        m = re.match(r"^=?['\"]?([^'\"!]+)['\"]?!(.+)$", formula)
+        if not m:
+            return []
+        sheet_name = m.group(1).strip()
+        cell_range = m.group(2).replace('$', '').strip()
+        try:
+            ws = spreadsheet.worksheet(sheet_name)
+            vals = ws.get_values(cell_range)
+            options = []
+            for r in vals:
+                for item in r:
+                    val = str(item).strip()
+                    if val and val not in options:
+                        options.append(val)
+            _range_options_cache[formula] = options
+            return options
+        except Exception as e:
+            logger.warning("Failed to resolve range validation %s: %s", formula, e)
+            return []
+    return []
 
 # Default mock data for local development when MOCK_DISCORD_AUTH is enabled
 _DEFAULT_MOCK_DATA = {
@@ -82,10 +142,32 @@ def get_sheet_data(force_refresh=False, gid=None):
     """
     # 1. Return sample data when local mocking is enabled
     if getattr(settings, 'MOCK_DISCORD_AUTH', False):
+        mock_grid = []
+        headers = list(_mock_sheet_store['headers'])
+        for r_idx, r in enumerate(_mock_sheet_store['rows']):
+            row_cells = []
+            for c_idx, val in enumerate(r):
+                row_cells.append({
+                    'row': r_idx + 1,
+                    'col': c_idx + 1,
+                    'rowspan': 1,
+                    'colspan': 1,
+                    'val': val,
+                    'bg': 'rgb(240,244,248)' if r_idx == 0 else '',
+                    'fg': '',
+                    'bold': (r_idx == 0),
+                    'align': 'left',
+                    'has_options': (c_idx == 2),
+                    'options_json': json.dumps(['Permafrost', 'Grovekeeper', 'Hallowfall', 'Bloodletter']) if c_idx == 2 else '',
+                })
+            mock_grid.append(row_cells)
         return {
             'doc_title': 'Dungeoneers',
-            'headers': list(_mock_sheet_store['headers']),
+            'headers': headers,
             'rows': [list(r) for r in _mock_sheet_store['rows']],
+            'grid_rows': mock_grid,
+            'max_cols': len(headers),
+            'col_letters': [get_col_letter(i + 1) for i in range(len(headers))],
             'tabs': [
                 {'id': '0', 'title': 'Sheet1', 'active': True},
                 {'id': '1431495942', 'title': '21.10 Def Mire against Bolty', 'active': False},
@@ -126,7 +208,6 @@ def get_sheet_data(force_refresh=False, gid=None):
         if not target_worksheet:
             target_worksheet = worksheets[0] if worksheets else spreadsheet.sheet1
 
-        all_values = target_worksheet.get_all_values()
         active_gid_str = str(target_worksheet.id)
 
         tabs = [
@@ -138,10 +219,105 @@ def get_sheet_data(force_refresh=False, gid=None):
             for ws in worksheets
         ]
 
+        # Fetch styled grid with formatting, cell background/text colors, merges, and dropdowns
+        grid_rows = []
+        max_cols = 26
+        try:
+            rc = getattr(target_worksheet, 'row_count', 65)
+            cc = getattr(target_worksheet, 'col_count', 26)
+            max_r = min(int(rc) if str(rc).isdigit() else 65, 65)
+            max_c = min(int(cc) if str(cc).isdigit() else 26, 26)
+            range_str = f"'{target_worksheet.title}'!A1:{get_col_letter(max_c)}{max_r}"
+
+            params = {
+                'ranges': [range_str],
+                'includeGridData': True,
+                'fields': 'sheets(properties,merges,data.rowData.values(formattedValue,effectiveFormat(backgroundColor,textFormat,horizontalAlignment),dataValidation))'
+            }
+            meta = spreadsheet.fetch_sheet_metadata(params)
+            sheet_meta = meta['sheets'][0] if meta.get('sheets') else {}
+            merges = sheet_meta.get('merges', [])
+
+            merge_map = {}
+            skip_set = set()
+            for m in merges:
+                s_r, e_r = m.get('startRowIndex', 0), m.get('endRowIndex', 0)
+                s_c, e_c = m.get('startColumnIndex', 0), m.get('endColumnIndex', 0)
+                rowspan = e_r - s_r
+                colspan = e_c - s_c
+                merge_map[(s_r, s_c)] = (rowspan, colspan)
+                for r in range(s_r, e_r):
+                    for c in range(s_c, e_c):
+                        if (r, c) != (s_r, s_c):
+                            skip_set.add((r, c))
+
+            rows_data = sheet_meta.get('data', [])[0].get('rowData', []) if sheet_meta.get('data') else []
+            for r_idx, r in enumerate(rows_data):
+                row_cells = []
+                vals = r.get('values', [])
+                for c_idx, cell in enumerate(vals):
+                    if (r_idx, c_idx) in skip_set:
+                        continue
+                    rowspan, colspan = merge_map.get((r_idx, c_idx), (1, 1))
+                    fmt = cell.get('effectiveFormat', {})
+                    bg = rgb_to_css(fmt.get('backgroundColor'))
+                    tf = fmt.get('textFormat', {})
+                    fg = rgb_to_css(tf.get('foregroundColor'))
+                    bold = tf.get('bold', False)
+                    align = fmt.get('horizontalAlignment', '').lower()
+                    val = cell.get('formattedValue', '')
+                    options = resolve_validation_options(cell.get('dataValidation', {}).get('condition'), spreadsheet)
+
+                    row_cells.append({
+                        'row': r_idx + 1,
+                        'col': c_idx + 1,
+                        'rowspan': rowspan,
+                        'colspan': colspan,
+                        'val': val,
+                        'bg': bg,
+                        'fg': fg,
+                        'bold': bold,
+                        'align': align,
+                        'has_options': bool(options),
+                        'options_json': json.dumps(options) if options else '',
+                    })
+                grid_rows.append(row_cells)
+
+        except Exception as e:
+            logger.warning("Could not fetch rich grid formatting, falling back to raw values: %s", e)
+
+        # Fallback if rich grid fetch failed or was empty
+        if not grid_rows:
+            all_values = target_worksheet.get_all_values()
+            for r_idx, r in enumerate(all_values[:65]):
+                row_cells = []
+                for c_idx, val in enumerate(r[:26]):
+                    row_cells.append({
+                        'row': r_idx + 1,
+                        'col': c_idx + 1,
+                        'rowspan': 1,
+                        'colspan': 1,
+                        'val': val,
+                        'bg': '',
+                        'fg': '',
+                        'bold': False,
+                        'align': 'left',
+                        'has_options': False,
+                        'options_json': '',
+                    })
+                grid_rows.append(row_cells)
+
+        headers = [c['val'] for c in grid_rows[0]] if grid_rows else []
+        raw_rows = [[c['val'] for c in r] for r in grid_rows[1:]] if len(grid_rows) > 1 else []
+        col_letters = [get_col_letter(i + 1) for i in range(max_cols)]
+
         data = {
             'doc_title': doc_title,
-            'headers': all_values[0] if all_values else [],
-            'rows': all_values[1:] if len(all_values) > 1 else [],
+            'headers': headers,
+            'rows': raw_rows,
+            'grid_rows': grid_rows,
+            'max_cols': max_cols,
+            'col_letters': col_letters,
             'tabs': tabs,
             'active_tab_id': active_gid_str,
             'active_tab_title': target_worksheet.title,

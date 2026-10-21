@@ -424,6 +424,31 @@
         background: #ffffff;
       }
 
+      /* Google Sheets Dropdown Arrow */
+      td.grid-cell.has-dropdown {
+        position: relative;
+        padding-right: 18px !important;
+      }
+
+      td.grid-cell.has-dropdown::after {
+        content: "▾";
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 11px;
+        color: #5f6368;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+
+      td.grid-cell.has-dropdown:hover::after,
+      td.grid-cell.has-dropdown.selected::after {
+        opacity: 1;
+        color: var(--sheets-green);
+        font-weight: bold;
+      }
+
       /* Saving indicator */
       td.grid-cell.saving {
         background-color: #fef7e0 !important;
@@ -693,41 +718,29 @@
         <thead>
           <tr>
             <th class="corner-cell"></th>
-            {% for header in headers %}
-            <th class="col-header" data-col-letter="">
-              <!-- Alphabet column letters: A, B, C... -->
-              <span class="col-letter"></span>
+            {% for letter in col_letters %}
+            <th class="col-header" data-col-letter="{{ letter }}">
+              <span class="col-letter">{{ letter }}</span>
             </th>
             {% endfor %}
           </tr>
         </thead>
         <tbody>
-          <!-- Row 1: Headers from Google Sheet -->
-          <tr class="header-row" data-row-num="1">
-            <td class="row-header">1</td>
-            {% for header in headers %}
-            <td
-              class="grid-cell"
-              data-row="1"
-              data-col="{{ forloop.counter }}"
-              onclick="selectCell(this)"
-              ondblclick="startEdit(this)"
-            >{{ header }}</td>
-            {% endfor %}
-          </tr>
-
-          <!-- Rows 2..N: Data Rows -->
-          {% for row in rows %}
-          <tr data-row-num="{{ forloop.counter|add:1 }}">
-            <td class="row-header">{{ forloop.counter|add:1 }}</td>
+          {% for row in grid_rows %}
+          <tr data-row-num="{{ forloop.counter }}">
+            <td class="row-header">{{ forloop.counter }}</td>
             {% for cell in row %}
             <td
-              class="grid-cell"
-              data-row="{{ forloop.parentloop.counter|add:1 }}"
-              data-col="{{ forloop.counter }}"
+              class="grid-cell {% if cell.has_options %}has-dropdown{% endif %}"
+              data-row="{{ cell.row }}"
+              data-col="{{ cell.col }}"
+              {% if cell.colspan > 1 %}colspan="{{ cell.colspan }}"{% endif %}
+              {% if cell.rowspan > 1 %}rowspan="{{ cell.rowspan }}"{% endif %}
+              {% if cell.has_options %}data-options="{{ cell.options_json }}"{% endif %}
+              style="{% if cell.bg %}background-color: {{ cell.bg }};{% endif %}{% if cell.fg %}color: {{ cell.fg }};{% endif %}{% if cell.bold %}font-weight: bold;{% endif %}{% if cell.align %}text-align: {{ cell.align }};{% endif %}"
               onclick="selectCell(this)"
               ondblclick="startEdit(this)"
-            >{{ cell }}</td>
+            >{{ cell.val }}</td>
             {% endfor %}
           </tr>
           {% endfor %}
@@ -797,14 +810,11 @@
       function assignColumnLetters() {
         const headers = document.querySelectorAll('th.col-header');
         headers.forEach((th, idx) => {
-          let letter = '';
-          let temp = idx;
-          while (temp >= 0) {
-            letter = String.fromCharCode((temp % 26) + 65) + letter;
-            temp = Math.floor(temp / 26) - 1;
+          if (!th.getAttribute('data-col-letter') || !th.querySelector('.col-letter').textContent) {
+            const letter = getColLetter(idx + 1);
+            th.querySelector('.col-letter').textContent = letter;
+            th.setAttribute('data-col-letter', letter);
           }
-          th.querySelector('.col-letter').textContent = letter;
-          th.setAttribute('data-col-letter', letter);
         });
       }
 
@@ -852,6 +862,11 @@
       function selectCell(cell) {
         if (cell.classList.contains('editing')) return;
 
+        if (currentSelectedCell === cell && cell.classList.contains('has-dropdown')) {
+          startEdit(cell);
+          return;
+        }
+
         if (currentSelectedCell) {
           currentSelectedCell.classList.remove('selected');
         }
@@ -876,10 +891,36 @@
         const originalText = cell.getAttribute('data-raw') !== null ? cell.getAttribute('data-raw') : cell.textContent.trim();
         cell.classList.add('editing');
 
+        const optionsRaw = cell.getAttribute('data-options');
+        let options = [];
+        if (optionsRaw) {
+          try {
+            options = JSON.parse(optionsRaw);
+          } catch (e) {}
+        }
+
+        cell.innerHTML = '';
         const input = document.createElement('input');
         input.type = 'text';
         input.value = originalText;
-        cell.innerHTML = '';
+
+        if (options && options.length > 0) {
+          const listId = `dl-${cell.getAttribute('data-row')}-${cell.getAttribute('data-col')}`;
+          input.setAttribute('list', listId);
+
+          const datalist = document.createElement('datalist');
+          datalist.id = listId;
+          options.forEach(opt => {
+            const opEl = document.createElement('option');
+            opEl.value = opt;
+            datalist.appendChild(opEl);
+          });
+          cell.appendChild(datalist);
+
+          // Save on dropdown selection
+          input.addEventListener('change', () => finish(true));
+        }
+
         cell.appendChild(input);
         input.focus();
         input.select();

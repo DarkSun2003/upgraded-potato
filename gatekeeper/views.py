@@ -142,17 +142,21 @@ def sheet_dashboard_view(request):
         data = {
             'doc_title': 'Spreadsheet',
             'headers': [],
-            'rows': [],
+            'grid_rows': [],
             'tabs': [],
             'active_tab_id': '',
             'active_tab_title': '',
+            'max_cols': 26,
+            'col_letters': [chr(c) for c in range(65, 91)],
         }
         messages.error(request, "Unable to fetch the latest spreadsheet data. Please try again shortly.")
 
     return render(request, 'dashboard/sheet.html', {
         'doc_title': data.get('doc_title', 'Spreadsheet'),
         'headers': data.get('headers', []),
-        'rows': data.get('rows', []),
+        'grid_rows': data.get('grid_rows', []),
+        'max_cols': data.get('max_cols', 26),
+        'col_letters': data.get('col_letters', []),
         'tabs': data.get('tabs', []),
         'active_tab_id': data.get('active_tab_id', ''),
         'active_tab_title': data.get('active_tab_title', ''),
