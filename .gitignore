@@ -15,7 +15,8 @@ google_credentials.json
 staticfiles/
 media/
 
-# Logs & Editor
+# Logs & Editor & Documents
 *.log
+*.docx
 .vscode/
 .idea/

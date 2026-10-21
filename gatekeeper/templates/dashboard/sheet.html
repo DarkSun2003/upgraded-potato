@@ -3,353 +3,715 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guild Operations Spreadsheet</title>
+    <title>The Dungeoneers — Operations Ledger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --bg: #0f172a;
-        --card-bg: #1e293b;
-        --border: #334155;
-        --text: #f8fafc;
-        --muted: #94a3b8;
-        --accent: #5865f2;
-        --accent-hover: #4752c4;
-        --success: #10b981;
-        --danger: #ef4444;
-        --warning: #f59e0b;
+        --bg-abyss: #07090d;
+        --bg-surface: #0e1218;
+        --bg-surface-elevated: #141b24;
+        --bg-surface-hover: #1b2432;
+        --border-subtle: rgba(255, 255, 255, 0.07);
+        --border-gold: rgba(230, 177, 92, 0.28);
+        --border-gold-glow: rgba(230, 177, 92, 0.5);
+        
+        --gold-primary: #e6b15c;
+        --gold-light: #f5cf8e;
+        --gold-dim: #997334;
+        --gold-bg: rgba(230, 177, 92, 0.08);
+
+        --emerald: #10b981;
+        --emerald-glow: rgba(16, 185, 129, 0.2);
+        --ruby: #f43f5e;
+        --amber: #f59e0b;
+
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --font-display: 'Cinzel', serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
       }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        padding: 1.5rem;
-        background-color: var(--bg);
-        color: var(--text);
-        font-family:
-          system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          Roboto,
-          sans-serif;
+        padding: 0;
+        background-color: var(--bg-abyss);
+        background-image: 
+          radial-gradient(circle at 50% 0%, rgba(230, 177, 92, 0.09) 0%, transparent 45%),
+          radial-gradient(circle at 85% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 40%),
+          linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
       }
-      .wrapper {
-        max-width: 1400px;
+
+      .container {
+        max-width: 1560px;
+        width: 100%;
         margin: 0 auto;
+        padding: 2rem 1.5rem 3rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
       }
+
+      /* Header */
       header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border-gold);
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 1.5rem;
+        position: relative;
       }
-      .user-info {
+
+      header::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 120px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--gold-primary), transparent);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+      }
+
+      .crest {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #1b2432, #0e1218);
+        border: 1px solid var(--gold-primary);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 16px rgba(230, 177, 92, 0.2);
+        font-family: var(--font-display);
+        color: var(--gold-primary);
+        font-weight: 900;
+        font-size: 1.4rem;
+        user-select: none;
+      }
+
+      .brand-title {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin: 0;
+        background: linear-gradient(135deg, #ffffff 40%, var(--gold-light) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-transform: uppercase;
+      }
+
+      .brand-subtitle {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-top: 0.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        background-color: var(--emerald);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px var(--emerald);
+        animation: pulseDot 2s infinite ease-in-out;
+      }
+
+      @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+      }
+
+      /* User Profile Box */
+      .user-panel {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: var(--bg-surface);
+        padding: 0.5rem 0.6rem 0.5rem 1rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: 9999px;
+      }
+
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid var(--border-gold);
+        background: var(--bg-surface-elevated);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--gold-light);
+        overflow: hidden;
+      }
+
+      .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .user-meta {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+      }
+
+      .user-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .user-badge {
+        font-size: 0.68rem;
+        color: var(--emerald);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+      }
+
+      .btn-logout {
+        background: transparent;
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        text-decoration: none;
+        padding: 0.4rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transition: all 0.2s ease;
+      }
+
+      .btn-logout:hover {
+        color: var(--ruby);
+        border-color: rgba(244, 63, 94, 0.4);
+        background: rgba(244, 63, 94, 0.08);
+      }
+
+      /* Control Deck */
+      .deck {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+      }
+
+      .search-wrapper {
+        position: relative;
+        min-width: 300px;
+        flex: 1;
+        max-width: 480px;
+      }
+
+      .search-input {
+        width: 100%;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.65rem 2.5rem 0.65rem 1rem;
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        color: var(--text-primary);
+        outline: none;
+        transition: all 0.2s ease;
+      }
+
+      .search-input:focus {
+        border-color: var(--gold-primary);
+        box-shadow: 0 0 12px rgba(230, 177, 92, 0.15);
+        background: var(--bg-surface-elevated);
+      }
+
+      .search-hint {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        background: var(--bg-surface-elevated);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--border-subtle);
+        pointer-events: none;
+      }
+
+      .deck-actions {
         display: flex;
         align-items: center;
         gap: 0.75rem;
       }
-      .badge {
-        background: #064e3b;
-        color: #6ee7b7;
-        padding: 0.25rem 0.65rem;
-        border-radius: 9999px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
+
       .btn {
-        background: var(--card-bg);
-        color: var(--text);
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        padding: 0.45rem 0.85rem;
-        border: 1px solid var(--border);
-        border-radius: 6px;
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        padding: 0.6rem 1.1rem;
+        border-radius: 8px;
+        border: 1px solid transparent;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        transition: all 0.15s ease;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
       }
-      .btn:hover {
-        background: var(--border);
+
+      .btn-gold {
+        background: linear-gradient(135deg, var(--gold-primary), var(--gold-dim));
+        color: #0b0d10;
+        box-shadow: 0 4px 14px rgba(230, 177, 92, 0.2);
       }
-      .btn-primary {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #fff;
+
+      .btn-gold:hover {
+        background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
+        box-shadow: 0 6px 18px rgba(230, 177, 92, 0.35);
+        transform: translateY(-1px);
       }
-      .btn-primary:hover {
-        background: var(--accent-hover);
-        border-color: var(--accent-hover);
+
+      .btn-ghost {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary);
       }
-      .controls-bar {
+
+      .btn-ghost:hover {
+        background: var(--bg-surface-elevated);
+        color: var(--text-primary);
+        border-color: var(--border-gold);
+      }
+
+      /* Stats bar */
+      .stats-strip {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        gap: 1.5rem;
         margin-bottom: 1rem;
-        gap: 1rem;
-        flex-wrap: wrap;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
-      .search-box {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 0.45rem 0.8rem;
-        color: var(--text);
-        font-size: 0.9rem;
-        min-width: 240px;
-        outline: none;
+
+      .stat-item strong {
+        color: var(--gold-light);
+        font-family: var(--font-mono);
       }
-      .search-box:focus {
-        border-color: var(--accent);
+
+      /* The Spreadsheet Ledger */
+      .ledger-frame {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+        position: relative;
       }
-      .edit-hint {
-        color: var(--muted);
-        font-size: 0.8rem;
-      }
-      .table-container {
+
+      .table-wrapper {
         width: 100%;
         overflow-x: auto;
-        background: var(--card-bg);
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
       }
+
       table {
         width: 100%;
         border-collapse: collapse;
         text-align: left;
-        font-size: 0.9rem;
+        font-size: 0.88rem;
       }
-      th,
-      td {
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--border);
+
+      thead {
+        background: #090c10;
+        border-bottom: 1px solid var(--border-gold);
+      }
+
+      th {
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--gold-light);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 1rem 1.25rem;
         white-space: nowrap;
       }
-      th {
-        background-color: #172033;
-        color: var(--muted);
-        text-transform: uppercase;
+
+      th:first-child {
+        width: 48px;
+        text-align: center;
+        color: var(--text-muted);
+      }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border-subtle);
+        transition: background 0.15s ease;
+      }
+
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background: var(--bg-surface-elevated);
+      }
+
+      .row-idx {
+        text-align: center;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
         font-size: 0.75rem;
-        letter-spacing: 0.05em;
         user-select: none;
+        padding: 0.75rem 0.5rem;
       }
-      tr:hover td {
-        background-color: #243044;
+
+      td {
+        padding: 0.85rem 1.25rem;
+        font-family: var(--font-mono);
+        color: #e2e8f0;
+        white-space: nowrap;
+        position: relative;
       }
-      /* Editable cells */
+
       td.editable {
         cursor: pointer;
-        position: relative;
-        transition: background-color 0.15s;
+        transition: background 0.15s, box-shadow 0.15s;
       }
+
       td.editable:hover {
-        background-color: #2e3c54;
+        background: rgba(230, 177, 92, 0.06);
+        color: var(--gold-light);
       }
+
       td.editable:hover::after {
         content: "✎";
         position: absolute;
-        right: 8px;
+        right: 12px;
         top: 50%;
         transform: translateY(-50%);
-        font-size: 0.75rem;
-        color: var(--muted);
+        font-size: 0.72rem;
+        color: var(--gold-dim);
       }
+
       td.editing {
-        padding: 4px 8px;
-        background: #172033 !important;
+        padding: 0.35rem 0.6rem !important;
+        background: #06080b !important;
       }
+
       td.editing input {
         width: 100%;
-        box-sizing: border-box;
-        background: #0f172a;
-        color: #fff;
-        border: 1px solid var(--accent);
-        border-radius: 4px;
-        padding: 6px 8px;
-        font-size: 0.9rem;
+        background: #06080b;
+        color: var(--gold-light);
+        border: 1px solid var(--gold-primary);
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.88rem;
         outline: none;
+        box-shadow: 0 0 10px rgba(230, 177, 92, 0.3);
       }
+
       td.saving {
-        background-color: rgba(245, 158, 11, 0.2) !important;
+        background-color: rgba(245, 158, 11, 0.15) !important;
       }
+
       td.save-success {
         background-color: rgba(16, 185, 129, 0.25) !important;
         transition: background-color 0.8s ease;
       }
+
       td.save-error {
-        background-color: rgba(239, 68, 68, 0.3) !important;
+        background-color: rgba(244, 63, 94, 0.25) !important;
       }
-      .empty-state {
-        padding: 3rem;
+
+      /* Empty State */
+      .empty-box {
         text-align: center;
-        color: var(--muted);
+        padding: 4rem 1.5rem;
+        color: var(--text-muted);
       }
-      /* Toast notification */
-      #toast {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: #1e293b;
-        border: 1px solid var(--border);
-        padding: 0.75rem 1.25rem;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-        display: none;
-        z-index: 100;
-        font-size: 0.9rem;
+
+      .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.4;
       }
+
       /* Modal */
-      .modal-overlay {
+      .modal-backdrop {
         position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.7);
+        inset: 0;
+        background: rgba(4, 6, 9, 0.75);
+        backdrop-filter: blur(8px);
         display: none;
         justify-content: center;
         align-items: center;
-        z-index: 200;
+        z-index: 1000;
+        padding: 1rem;
       }
-      .modal {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 1.5rem;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+
+      .modal-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-gold);
+        border-radius: 14px;
+        width: 100%;
+        max-width: 520px;
+        padding: 1.75rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(230, 177, 92, 0.1);
+        position: relative;
+        animation: modalAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .modal h3 {
-        margin-top: 0;
+
+      @keyframes modalAppear {
+        from { opacity: 0; transform: scale(0.96) translateY(8px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
       }
-      .form-group {
+
+      .modal-title {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 0.35rem 0;
+        color: var(--gold-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .modal-desc {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        margin: 0 0 1.5rem 0;
+      }
+
+      .field-group {
         margin-bottom: 1rem;
       }
-      .form-group label {
+
+      .field-label {
         display: block;
-        font-size: 0.8rem;
-        color: var(--muted);
-        margin-bottom: 0.35rem;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--gold-primary);
+        margin-bottom: 0.4rem;
       }
-      .form-group input {
+
+      .field-input {
         width: 100%;
-        box-sizing: border-box;
-        background: var(--bg);
-        border: 1px solid var(--border);
+        background: var(--bg-abyss);
+        border: 1px solid var(--border-subtle);
         border-radius: 6px;
-        color: var(--text);
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9rem;
+        padding: 0.6rem 0.85rem;
+        font-family: var(--font-mono);
+        font-size: 0.88rem;
+        color: var(--text-primary);
+        outline: none;
       }
-      .modal-actions {
+
+      .field-input:focus {
+        border-color: var(--gold-primary);
+        box-shadow: 0 0 10px rgba(230, 177, 92, 0.2);
+      }
+
+      .modal-footer {
         display: flex;
         justify-content: flex-end;
         gap: 0.75rem;
-        margin-top: 1.5rem;
+        margin-top: 1.75rem;
+      }
+
+      /* Toast notification */
+      #toastBox {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-gold);
+        padding: 0.85rem 1.4rem;
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+        display: none;
+        z-index: 2000;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        animation: toastIn 0.2s ease-out;
+      }
+
+      @keyframes toastIn {
+        from { transform: translateY(12px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
       }
     </style>
   </head>
   <body>
-    <div class="wrapper">
-      {% csrf_token %}
+    {% csrf_token %}
+    <div class="container">
+      <!-- Header -->
       <header>
-        <div>
-          <h2 style="margin: 0 0 0.25rem 0">Guild Operations Data</h2>
-          <small style="color: var(--muted)">Connected to Google Sheets via Discord Gatekeeper</small>
+        <div class="brand">
+          <div class="crest">⚔</div>
+          <div>
+            <h1 class="brand-title">The Dungeoneers</h1>
+            <div class="brand-subtitle">
+              <span class="status-dot"></span>
+              Live Guild Operations Ledger
+            </div>
+          </div>
         </div>
-        <div class="user-info">
-          <span>Logged in as <strong>{{ username }}</strong></span>
-          <span class="badge">&#10003; Verified Member</span>
-          <a href="{% url 'discord_logout' %}" class="btn">Log out</a>
+
+        <div class="user-panel">
+          <div class="user-avatar">
+            {% if avatar_url %}
+            <img src="{{ avatar_url }}" alt="{{ username }}" />
+            {% else %}
+            <span>{{ username|slice:":1"|upper }}</span>
+            {% endif %}
+          </div>
+          <div class="user-meta">
+            <span class="user-name">{{ username }}</span>
+            <span class="user-badge">&#10003; Verified Member</span>
+          </div>
+          <a href="{% url 'discord_logout' %}" class="btn-logout">Exit</a>
         </div>
       </header>
 
       {% if messages %}
         {% for message in messages %}
-        <div
-          style="
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid var(--accent);
-            color: #93c5fd;
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-          "
-        >
+        <div style="background: rgba(230, 177, 92, 0.08); border: 1px solid var(--border-gold); color: var(--gold-light); padding: 0.75rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.85rem; font-family: var(--font-mono);">
           {{ message }}
         </div>
         {% endfor %}
       {% endif %}
 
-      <div class="controls-bar">
-        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <input type="text" id="searchInput" class="search-box" placeholder="Filter rows..." onkeyup="filterTable()" />
-          <span class="edit-hint">💡 Double-click any cell to edit &amp; sync to Google Sheets</span>
+      <!-- Control Deck -->
+      <div class="deck">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="tableFilter"
+            class="search-input"
+            placeholder="Search records across all fields..."
+            onkeyup="filterRows()"
+          />
+          <span class="search-hint">/</span>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-primary" onclick="openAddRowModal()">+ Add Row</button>
-          <a href="?refresh=1" class="btn" title="Fetch fresh records from Google Sheets">↻ Refresh</a>
+
+        <div class="deck-actions">
+          <button class="btn btn-gold" onclick="openModal()">
+            <span>+</span> Append Entry
+          </button>
+          <a href="?refresh=1" class="btn btn-ghost" title="Bypass cache and pull fresh data">
+            <span>↻</span> Force Sync
+          </a>
         </div>
       </div>
 
-      <div class="table-container">
+      <div class="stats-strip">
+        <div class="stat-item">Total Rows: <strong id="totalCount">{{ rows|length }}</strong></div>
+        <div class="stat-item">Editing: <strong style="color: var(--text-muted)">Double-Click Cell</strong></div>
+        <div class="stat-item">Security: <strong style="color: var(--emerald)">Discord Role Gated</strong></div>
+      </div>
+
+      <!-- Table Frame -->
+      <div class="ledger-frame">
         {% if rows or headers %}
-        <table id="sheetTable">
-          <thead>
-            <tr>
-              {% for header in headers %}
-              <th>{{ header }}</th>
+        <div class="table-wrapper">
+          <table id="ledgerTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                {% for header in headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+              <tr data-row-idx="{{ forloop.counter }}">
+                <td class="row-idx">{{ forloop.counter }}</td>
+                {% for cell in row %}
+                <td
+                  class="editable"
+                  data-row="{{ forloop.parentloop.counter|add:1 }}"
+                  data-col="{{ forloop.counter }}"
+                  ondblclick="startCellEdit(this)"
+                >{{ cell }}</td>
+                {% endfor %}
+              </tr>
               {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in rows %}
-            <tr data-row-index="{{ forloop.counter|add:1 }}">
-              {% for cell in row %}
-              <td
-                class="editable"
-                data-row="{{ forloop.parentloop.counter|add:1 }}"
-                data-col="{{ forloop.counter }}"
-                ondblclick="startEdit(this)"
-              >{{ cell }}</td>
-              {% endfor %}
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
         {% else %}
-        <div class="empty-state">
-          <p>No records found or the spreadsheet is currently blank.</p>
+        <div class="empty-box">
+          <div class="empty-icon">📜</div>
+          <p style="margin: 0; font-family: var(--font-display); font-size: 1rem; color: var(--gold-light);">No records currently cataloged.</p>
+          <p style="margin-top: 0.5rem; font-size: 0.8rem;">Click "+ Append Entry" above to add your first record to the Google Sheet.</p>
         </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Toast notification -->
-    <div id="toast"></div>
+    <!-- Notification Toast -->
+    <div id="toastBox"></div>
 
-    <!-- Add Row Modal -->
-    <div id="addRowModal" class="modal-overlay">
-      <div class="modal">
-        <h3>Add New Record</h3>
-        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">
-          This record will be appended directly to the Google Sheet.
-        </p>
-        <form id="addRowForm" onsubmit="submitAddRow(event)">
+    <!-- Add Record Modal -->
+    <div id="recordModal" class="modal-backdrop">
+      <div class="modal-card">
+        <h3 class="modal-title">New Guild Ledger Entry</h3>
+        <p class="modal-desc">This entry will be instantly added to the live Google Sheet.</p>
+        <form id="recordForm" onsubmit="handleFormSubmit(event)">
           {% for header in headers %}
-          <div class="form-group">
-            <label>{{ header }}</label>
-            <input type="text" name="col_{{ forloop.counter }}" placeholder="Enter {{ header }}" />
+          <div class="field-group">
+            <label class="field-label">{{ header }}</label>
+            <input type="text" class="field-input" name="col_{{ forloop.counter }}" placeholder="Enter {{ header }}..." />
           </div>
           {% endfor %}
-          <div class="modal-actions">
-            <button type="button" class="btn" onclick="closeAddRowModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save to Sheet</button>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeModal()">Dismiss</button>
+            <button type="submit" class="btn btn-gold">Commit to Sheet</button>
           </div>
         </form>
       </div>
@@ -357,74 +719,85 @@
 
     <script>
       function getCsrfToken() {
-        const input = document.querySelector('[name=csrfmiddlewaretoken]');
-        return input ? input.value : '';
+        const el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
       }
 
-      function showToast(message, type = 'info') {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.style.borderColor = type === 'error' ? 'var(--danger)' : (type === 'success' ? 'var(--success)' : 'var(--border)');
-        toast.style.display = 'block';
+      function showToast(text, status = 'success') {
+        const box = document.getElementById('toastBox');
+        box.textContent = text;
+        box.style.borderColor = status === 'error' ? 'var(--ruby)' : 'var(--gold-primary)';
+        box.style.color = status === 'error' ? 'var(--ruby)' : 'var(--gold-light)';
+        box.style.display = 'block';
         setTimeout(() => {
-          toast.style.display = 'none';
-        }, 3500);
+          box.style.display = 'none';
+        }, 3200);
       }
 
-      function filterTable() {
-        const filter = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('#sheetTable tbody tr');
-        rows.forEach(row => {
-          const text = row.textContent.toLowerCase();
-          row.style.display = text.includes(filter) ? '' : 'none';
+      // Instant search filter
+      function filterRows() {
+        const query = document.getElementById('tableFilter').value.toLowerCase();
+        const trs = document.querySelectorAll('#ledgerTable tbody tr');
+        let matched = 0;
+        trs.forEach(tr => {
+          const content = tr.innerText.toLowerCase();
+          const match = content.includes(query);
+          tr.style.display = match ? '' : 'none';
+          if (match) matched++;
         });
+        document.getElementById('totalCount').textContent = matched;
       }
 
-      function startEdit(cell) {
+      // Keyboard shortcut: '/' focuses search
+      window.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+          e.preventDefault();
+          document.getElementById('tableFilter').focus();
+        }
+      });
+
+      // Cell Editing
+      function startCellEdit(cell) {
         if (cell.classList.contains('editing') || cell.classList.contains('saving')) return;
 
-        const originalText = cell.textContent.trim();
+        const original = cell.textContent.trim();
         cell.classList.add('editing');
+
         const input = document.createElement('input');
         input.type = 'text';
-        input.value = originalText;
+        input.value = original;
         cell.textContent = '';
         cell.appendChild(input);
         input.focus();
         input.select();
 
-        let isDone = false;
+        let finalized = false;
 
-        function finishEdit(save) {
-          if (isDone) return;
-          isDone = true;
+        function commit(save) {
+          if (finalized) return;
+          finalized = true;
 
-          const newValue = input.value.trim();
+          const newVal = input.value.trim();
           cell.classList.remove('editing');
 
-          if (!save || newValue === originalText) {
-            cell.textContent = originalText;
+          if (!save || newVal === original) {
+            cell.textContent = original;
             return;
           }
 
-          cell.textContent = newValue;
-          saveCell(cell, originalText, newValue);
+          cell.textContent = newVal;
+          saveCell(cell, original, newVal);
         }
 
         input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            finishEdit(true);
-          } else if (e.key === 'Escape') {
-            finishEdit(false);
-          }
+          if (e.key === 'Enter') commit(true);
+          if (e.key === 'Escape') commit(false);
         });
 
-        input.addEventListener('blur', () => {
-          finishEdit(true);
-        });
+        input.addEventListener('blur', () => commit(true));
       }
 
-      async function saveCell(cell, oldValue, newValue) {
+      async function saveCell(cell, oldVal, newVal) {
         const row = cell.getAttribute('data-row');
         const col = cell.getAttribute('data-col');
 
@@ -437,7 +810,7 @@
               'Content-Type': 'application/json',
               'X-CSRFToken': getCsrfToken(),
             },
-            body: JSON.stringify({ row: parseInt(row), col: parseInt(col), value: newValue })
+            body: JSON.stringify({ row: parseInt(row), col: parseInt(col), value: newVal })
           });
 
           const data = await res.json();
@@ -445,36 +818,36 @@
 
           if (res.ok && data.success) {
             cell.classList.add('save-success');
-            showToast('Cell updated in Google Sheet', 'success');
+            showToast('✓ Cell updated in Google Sheet', 'success');
             setTimeout(() => cell.classList.remove('save-success'), 1200);
           } else {
             cell.classList.add('save-error');
-            cell.textContent = oldValue;
+            cell.textContent = oldVal;
             showToast(data.error || 'Failed to update cell.', 'error');
             setTimeout(() => cell.classList.remove('save-error'), 2000);
           }
         } catch (err) {
           cell.classList.remove('saving');
           cell.classList.add('save-error');
-          cell.textContent = oldValue;
-          showToast('Network error while saving cell.', 'error');
+          cell.textContent = oldVal;
+          showToast('Network disruption while saving cell.', 'error');
           setTimeout(() => cell.classList.remove('save-error'), 2000);
         }
       }
 
-      function openAddRowModal() {
-        document.getElementById('addRowModal').style.display = 'flex';
+      function openModal() {
+        document.getElementById('recordModal').style.display = 'flex';
       }
 
-      function closeAddRowModal() {
-        document.getElementById('addRowModal').style.display = 'none';
-        document.getElementById('addRowForm').reset();
+      function closeModal() {
+        document.getElementById('recordModal').style.display = 'none';
+        document.getElementById('recordForm').reset();
       }
 
-      async function submitAddRow(e) {
+      async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
-        const inputs = Array.from(form.querySelectorAll('input'));
+        const inputs = Array.from(form.querySelectorAll('.field-input'));
         const values = inputs.map(i => i.value.trim());
 
         try {
@@ -489,14 +862,14 @@
 
           const data = await res.json();
           if (res.ok && data.success) {
-            closeAddRowModal();
-            showToast('Row added successfully! Refreshing...', 'success');
-            setTimeout(() => window.location.reload(), 800);
+            closeModal();
+            showToast('✓ Record appended to Google Sheet! Refreshing...', 'success');
+            setTimeout(() => window.location.reload(), 700);
           } else {
-            showToast(data.error || 'Failed to add row.', 'error');
+            showToast(data.error || 'Failed to append record.', 'error');
           }
         } catch (err) {
-          showToast('Network error while adding row.', 'error');
+          showToast('Network error while committing record.', 'error');
         }
       }
     </script>

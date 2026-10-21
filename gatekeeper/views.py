@@ -118,6 +118,11 @@ def discord_callback(request):
 
     request.session['discord_user_id'] = user_id
     request.session['discord_username'] = discord_user.get('username', 'Member')
+    avatar_id = discord_user.get('avatar')
+    if avatar_id:
+        request.session['discord_avatar_url'] = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar_id}.png?size=64"
+    else:
+        request.session['discord_avatar_url'] = None
 
     return redirect('sheet_dashboard')
 
@@ -139,7 +144,8 @@ def sheet_dashboard_view(request):
     return render(request, 'dashboard/sheet.html', {
         'headers': data.get('headers', []),
         'rows': data.get('rows', []),
-        'username': request.session.get('discord_username', 'Member')
+        'username': request.session.get('discord_username', 'Member'),
+        'avatar_url': request.session.get('discord_avatar_url'),
     })
 
 
