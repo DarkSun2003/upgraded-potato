@@ -387,6 +387,31 @@
         z-index: 5 !important;
       }
 
+      /* Smart chip / link styling */
+      .cell-link-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #1a73e8;
+        background: #e8f0fe;
+        padding: 1px 8px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 500;
+        max-width: 95%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .cell-link-pill:hover {
+        background: #d2e3fc;
+        color: #174ea6;
+        text-decoration: none;
+      }
+
       td.grid-cell.editing input {
         width: 100%;
         height: 100%;
@@ -742,8 +767,18 @@
         <form id="addRowForm" onsubmit="submitRowForm(event)">
           {% for header in headers %}
           <div class="modal-field">
-            <label>{{ header }}</label>
-            <input type="text" class="modal-input-val" placeholder="Enter {{ header }}" />
+            <label>
+              {% if header|slice:":4" == "http" %}
+                Column {{ forloop.counter }} (External Link)
+              {% elif not header %}
+                Column {{ forloop.counter }}
+              {% elif header|length > 35 %}
+                {{ header|slice:":35" }}...
+              {% else %}
+                {{ header }}
+              {% endif %}
+            </label>
+            <input type="text" class="modal-input-val" placeholder="Column {{ forloop.counter }} value" />
           </div>
           {% endfor %}
           <div class="modal-buttons">
@@ -792,6 +827,27 @@
         document.getElementById('saveStatusText').textContent = text;
       }
 
+      function renderCellContent(cell, val) {
+        cell.setAttribute('data-raw', val);
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+          let label = '🔗 External Link ↗';
+          if (val.includes('docs.google.com/spreadsheets')) {
+            label = '🔗 Sign Up Sheet Link ↗';
+          } else if (val.includes('discord.gg') || val.includes('discord.com')) {
+            label = '🎮 Discord Link ↗';
+          }
+          cell.innerHTML = `<a href="${val}" target="_blank" rel="noopener noreferrer" class="cell-link-pill" onclick="event.stopPropagation()" title="${val}">${label}</a>`;
+        } else {
+          cell.textContent = val;
+        }
+      }
+
+      function formatAllCells() {
+        document.querySelectorAll('td.grid-cell').forEach(cell => {
+          renderCellContent(cell, cell.textContent.trim());
+        });
+      }
+
       // Cell selection
       function selectCell(cell) {
         if (cell.classList.contains('editing')) return;
@@ -806,9 +862,10 @@
         const row = cell.getAttribute('data-row');
         const col = parseInt(cell.getAttribute('data-col'));
         const colLetter = getColLetter(col);
+        const rawVal = cell.getAttribute('data-raw') !== null ? cell.getAttribute('data-raw') : cell.textContent.trim();
 
         document.getElementById('activeCellName').textContent = `${colLetter}${row}`;
-        document.getElementById('formulaInput').value = cell.textContent.trim();
+        document.getElementById('formulaInput').value = rawVal;
       }
 
       // Edit cell
@@ -816,13 +873,13 @@
         if (cell.classList.contains('editing') || cell.classList.contains('saving')) return;
 
         selectCell(cell);
-        const originalText = cell.textContent.trim();
+        const originalText = cell.getAttribute('data-raw') !== null ? cell.getAttribute('data-raw') : cell.textContent.trim();
         cell.classList.add('editing');
 
         const input = document.createElement('input');
         input.type = 'text';
         input.value = originalText;
-        cell.textContent = '';
+        cell.innerHTML = '';
         cell.appendChild(input);
         input.focus();
         input.select();
@@ -837,12 +894,12 @@
           cell.classList.remove('editing');
 
           if (!save || newVal === originalText) {
-            cell.textContent = originalText;
+            renderCellContent(cell, originalText);
             document.getElementById('formulaInput').value = originalText;
             return;
           }
 
-          cell.textContent = newVal;
+          renderCellContent(cell, newVal);
           document.getElementById('formulaInput').value = newVal;
           saveCell(cell, originalText, newVal);
         }
@@ -877,8 +934,8 @@
         const val = document.getElementById('formulaInput').value;
 
         if (e.key === 'Enter') {
-          const oldVal = currentSelectedCell.textContent.trim();
-          currentSelectedCell.textContent = val;
+          const oldVal = currentSelectedCell.getAttribute('data-raw') !== null ? currentSelectedCell.getAttribute('data-raw') : currentSelectedCell.textContent.trim();
+          renderCellContent(currentSelectedCell, val);
           saveCell(currentSelectedCell, oldVal, val);
         }
       }
@@ -906,11 +963,12 @@
 
           if (res.ok && data.success) {
             cell.classList.add('save-success');
+            renderCellContent(cell, newVal);
             setStatus('☁ All changes saved to Drive');
             setTimeout(() => cell.classList.remove('save-success'), 1200);
           } else {
             cell.classList.add('save-error');
-            cell.textContent = oldVal;
+            renderCellContent(cell, oldVal);
             document.getElementById('formulaInput').value = oldVal;
             setStatus('⚠️ Error saving change.');
             alert(data.error || 'Failed to update cell in Google Sheet.');
@@ -919,7 +977,7 @@
         } catch (err) {
           cell.classList.remove('saving');
           cell.classList.add('save-error');
-          cell.textContent = oldVal;
+          renderCellContent(cell, oldVal);
           document.getElementById('formulaInput').value = oldVal;
           setStatus('⚠️ Network error.');
           setTimeout(() => cell.classList.remove('save-error'), 2000);
@@ -1001,9 +1059,10 @@
       // Initialize on load
       window.addEventListener('DOMContentLoaded', () => {
         assignColumnLetters();
-        // Select first cell A1 by default
-        const firstCell = document.querySelector('td.grid-cell');
-        if (firstCell) selectCell(firstCell);
+        formatAllCells();
+        // Keep initial state clean so formula bar does not display alarming URLs on load
+        document.getElementById('activeCellName').textContent = '';
+        document.getElementById('formulaInput').value = '';
       });
     </script>
   </body>
