@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: discord-sheet-gatekeeper
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn core.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_REDIRECT_URI
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_TARGET_GUILD_ID
+        sync: false
+      - key: DISCORD_GUILD_MEMBER_ROLE_ID
+        sync: false
+      - key: DISCORD_ALLIANCE_ROLE_ID
+        sync: false
+      - key: DISCORD_INVITE_URL
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false

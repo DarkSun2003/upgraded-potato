@@ -28,10 +28,39 @@ This project solves that problem with a **secure proxy architecture**:
   - Manual cache refresh button (`?refresh=1`).
 - **Offline Mock Development Mode**: Full local development workflow with simulated Discord roles and in-memory sheet editing without requiring live credentials.
 - **Automated Test Suite**: 12 comprehensive unit and integration tests covering role enforcement, API operations, OAuth flows, and caching.
+- **Render Ready**: Built-in `build.sh`, `render.yaml`, `gunicorn`, `whitenoise`, and automatic `RENDER_EXTERNAL_HOSTNAME` detection.
 
 ---
 
-## 🛠️ Getting Started
+## ☁️ Deploying to Render (Recommended)
+
+1. **Push your code to GitHub**.
+2. Go to your [Render Dashboard](https://dashboard.render.com/) and click **New +** > **Web Service**.
+3. Connect your GitHub repository.
+4. Configure the settings:
+   - **Environment**: `Python`
+   - **Build Command**: `./build.sh`
+   - **Start Command**: `gunicorn core.wsgi:application`
+5. Under **Environment Variables**, add:
+   - `DEBUG`: `False`
+   - `SECRET_KEY`: (Click *Generate* or paste a random string)
+   - `DISCORD_CLIENT_ID`: Your Discord application Client ID
+   - `DISCORD_CLIENT_SECRET`: Your Discord application Client Secret
+   - `DISCORD_REDIRECT_URI`: `https://<your-service-name>.onrender.com/auth/discord/callback/`
+   - `DISCORD_BOT_TOKEN`: Your bot token
+   - `DISCORD_TARGET_GUILD_ID`: Your Discord server ID
+   - `DISCORD_GUILD_MEMBER_ROLE_ID`: Role ID allowed access
+   - `DISCORD_ALLIANCE_ROLE_ID`: Secondary role ID (optional)
+   - `DISCORD_INVITE_URL`: Server invite link (for unauthorized page)
+   - `GOOGLE_SHEET_ID`: Your Google Sheet ID
+   - `GOOGLE_CREDENTIALS_JSON`: The raw JSON string of your Google service account credentials
+6. In the **Discord Developer Portal**, add your redirect URI to **OAuth2 > Redirects**:
+   `https://<your-service-name>.onrender.com/auth/discord/callback/`
+7. Click **Deploy Web Service**!
+
+---
+
+## 🛠️ Local Getting Started
 
 ### 1. Clone & Set Up Virtual Environment
 
@@ -61,7 +90,6 @@ cp .env.example .env
 ```
 
 Edit `.env` with your credentials:
-
 - **`DISCORD_CLIENT_ID` & `DISCORD_CLIENT_SECRET`**: From the [Discord Developer Portal](https://discord.com/developers/applications).
 - **`DISCORD_REDIRECT_URI`**: E.g. `http://localhost:8000/auth/discord/callback/` for local dev.
 - **`DISCORD_BOT_TOKEN`**: Bot token with Server Members intent enabled.
