@@ -41,31 +41,36 @@ def reset_mock_sheet():
 def get_gspread_client():
     """
     Initializes and returns a gspread client.
-    Supports either:
-    1. GOOGLE_CREDENTIALS_JSON environment variable (JSON string, recommended for cloud deployments)
-    2. google_credentials.json file on disk (default local file)
+    Supports:
+    1. GOOGLE_CREDENTIALS_JSON environment variable (JSON string)
+    2. google_credentials.json file in project root
+    3. Render Secret File at /etc/secrets/google_credentials.json
     """
     creds_json = getattr(settings, 'GOOGLE_CREDENTIALS_JSON', None) or os.getenv('GOOGLE_CREDENTIALS_JSON')
     if creds_json:
         try:
             creds_dict = json.loads(creds_json) if isinstance(creds_json, str) else creds_json
+            # When pasting JSON into environment variables, newlines in the private key often get double-escaped as "\\n"
+            if isinstance(creds_dict, dict) and 'private_key' in creds_dict and isinstance(creds_dict['private_key'], str):
+                creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
             return gspread.service_account_from_dict(creds_dict)
         except Exception as e:
             logger.error("Failed to parse GOOGLE_CREDENTIALS_JSON: %s", e)
             raise ImproperlyConfigured(f"Invalid GOOGLE_CREDENTIALS_JSON: {e}")
 
-    creds_file = getattr(settings, 'GOOGLE_CREDENTIALS_FILE', None)
-    if not creds_file:
-        creds_path = Path(settings.BASE_DIR) / "google_credentials.json"
-    else:
-        creds_path = Path(creds_file)
+    possible_paths = [
+        getattr(settings, 'GOOGLE_CREDENTIALS_FILE', None),
+        Path(settings.BASE_DIR) / "google_credentials.json",
+        Path("/etc/secrets/google_credentials.json"),
+    ]
 
-    if creds_path.is_file():
-        return gspread.service_account(filename=str(creds_path))
+    for p in possible_paths:
+        if p and Path(p).is_file():
+            return gspread.service_account(filename=str(p))
 
     raise ImproperlyConfigured(
-        f"Google credentials not found. Provide 'google_credentials.json' at {creds_path} "
-        "or set the GOOGLE_CREDENTIALS_JSON environment variable."
+        "Google credentials not found. Provide either 'google_credentials.json' in your project root, "
+        "a Render Secret File at /etc/secrets/google_credentials.json, or set the GOOGLE_CREDENTIALS_JSON environment variable."
     )
 
 
@@ -94,8 +99,13 @@ def get_sheet_data(force_refresh=False):
         raise ImproperlyConfigured("GOOGLE_SHEET_ID is not configured in settings.")
 
     gc = get_gspread_client()
-    worksheet = gc.open_by_key(sheet_id).sheet1
-    all_values = worksheet.get_all_values()
+    try:
+        spreadsheet = gc.open_by_key(sheet_id)
+        worksheet = spreadsheet.sheet1
+        all_values = worksheet.get_all_values()
+    except Exception as e:
+        logger.error("Error accessing Google Sheet with ID %s: %s", sheet_id, e)
+        raise
 
     if not all_values:
         data = {"headers": [], "rows": []}
