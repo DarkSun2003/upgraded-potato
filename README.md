@@ -139,4 +139,4 @@ Available scenarios:
 
 ## 📄 License
 
-MIT
+All rights reserved. Private project.
