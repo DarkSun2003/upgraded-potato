@@ -3,39 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Dungeoneers — Operations Ledger</title>
+    <title>Dungeoneers CTA — Google Sheets</title>
+    <link rel="icon" type="image/x-icon" href="https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Google+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --bg-abyss: #07090d;
-        --bg-surface: #0e1218;
-        --bg-surface-elevated: #141b24;
-        --bg-surface-hover: #1b2432;
-        --border-subtle: rgba(255, 255, 255, 0.07);
-        --border-gold: rgba(230, 177, 92, 0.28);
-        --border-gold-glow: rgba(230, 177, 92, 0.5);
-        
-        --gold-primary: #e6b15c;
-        --gold-light: #f5cf8e;
-        --gold-dim: #997334;
-        --gold-bg: rgba(230, 177, 92, 0.08);
-
-        --emerald: #10b981;
-        --emerald-glow: rgba(16, 185, 129, 0.2);
-        --ruby: #f43f5e;
-        --amber: #f59e0b;
-
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
-        --font-display: 'Cinzel', serif;
-        --font-body: 'Plus Jakarta Sans', sans-serif;
-        --font-mono: 'JetBrains Mono', monospace;
+        --sheets-green: #0f9d58;
+        --sheets-green-hover: #0b8043;
+        --sheets-green-light: #e6f4ea;
+        --sheets-border: #e0e0e0;
+        --sheets-header-bg: #f8f9fa;
+        --sheets-header-text: #5f6368;
+        --sheets-select-border: #1a73e8;
+        --sheets-select-bg: rgba(26, 115, 232, 0.08);
+        --text-color: #202124;
       }
 
       * {
@@ -45,763 +31,824 @@
       body {
         margin: 0;
         padding: 0;
-        background-color: var(--bg-abyss);
-        background-image: 
-          radial-gradient(circle at 50% 0%, rgba(230, 177, 92, 0.09) 0%, transparent 45%),
-          radial-gradient(circle at 85% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 40%),
-          linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-        background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
-        color: var(--text-primary);
-        font-family: var(--font-body);
-        min-height: 100vh;
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background-color: #ffffff;
+        color: var(--text-color);
+        height: 100vh;
         display: flex;
         flex-direction: column;
-      }
-
-      .container {
-        max-width: 1560px;
-        width: 100%;
-        margin: 0 auto;
-        padding: 2rem 1.5rem 3rem;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-      }
-
-      /* Header */
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 1.5rem;
-        margin-bottom: 2rem;
-        border-bottom: 1px solid var(--border-gold);
-        flex-wrap: wrap;
-        gap: 1.5rem;
-        position: relative;
-      }
-
-      header::after {
-        content: "";
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        width: 120px;
-        height: 2px;
-        background: linear-gradient(90deg, var(--gold-primary), transparent);
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-      }
-
-      .crest {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, #1b2432, #0e1218);
-        border: 1px solid var(--gold-primary);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 16px rgba(230, 177, 92, 0.2);
-        font-family: var(--font-display);
-        color: var(--gold-primary);
-        font-weight: 900;
-        font-size: 1.4rem;
-        user-select: none;
-      }
-
-      .brand-title {
-        font-family: var(--font-display);
-        font-size: 1.5rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        margin: 0;
-        background: linear-gradient(135deg, #ffffff 40%, var(--gold-light) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-transform: uppercase;
-      }
-
-      .brand-subtitle {
-        color: var(--text-muted);
-        font-size: 0.78rem;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        margin-top: 0.2rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .status-dot {
-        width: 7px;
-        height: 7px;
-        background-color: var(--emerald);
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 8px var(--emerald);
-        animation: pulseDot 2s infinite ease-in-out;
-      }
-
-      @keyframes pulseDot {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.85); }
-      }
-
-      /* User Profile Box */
-      .user-panel {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        background: var(--bg-surface);
-        padding: 0.5rem 0.6rem 0.5rem 1rem;
-        border: 1px solid var(--border-subtle);
-        border-radius: 9999px;
-      }
-
-      .user-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: 1px solid var(--border-gold);
-        background: var(--bg-surface-elevated);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-display);
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: var(--gold-light);
         overflow: hidden;
       }
 
-      .user-avatar img {
+      /* Top Google Sheets Navbar */
+      .sheets-top-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px 4px 12px;
+        background: #ffffff;
+        border-bottom: 1px solid #dadce0;
+      }
+
+      .sheets-title-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .sheets-app-icon {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+
+      .sheets-doc-details {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sheets-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sheets-doc-title {
+        font-family: 'Google Sans', 'Roboto', sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        color: #202124;
+        line-height: 24px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        outline: none;
+      }
+
+      .sheets-save-status {
+        font-size: 12px;
+        color: #5f6368;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .sheets-menu-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .menu-item {
+        font-size: 13px;
+        color: #3c4043;
+        padding: 2px 6px;
+        border-radius: 4px;
+        cursor: default;
+        user-select: none;
+      }
+
+      .menu-item:hover {
+        background-color: #f1f3f4;
+      }
+
+      /* Discord User Top Right */
+      .discord-auth-pill {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f1f3f4;
+        padding: 4px 12px 4px 6px;
+        border-radius: 24px;
+        border: 1px solid #dadce0;
+      }
+
+      .discord-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #5865f2;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 12px;
+        overflow: hidden;
+      }
+
+      .discord-avatar img {
         width: 100%;
         height: 100%;
         object-fit: cover;
       }
 
-      .user-meta {
+      .discord-user-info {
         display: flex;
         flex-direction: column;
-        line-height: 1.2;
+        line-height: 1.1;
       }
 
-      .user-name {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text-primary);
+      .discord-username {
+        font-size: 12px;
+        font-weight: 500;
+        color: #202124;
       }
 
-      .user-badge {
-        font-size: 0.68rem;
-        color: var(--emerald);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+      .discord-role-badge {
+        font-size: 10px;
+        color: var(--sheets-green);
         font-weight: 600;
       }
 
-      .btn-logout {
-        background: transparent;
-        border: 1px solid var(--border-subtle);
-        color: var(--text-muted);
+      .btn-sheets-logout {
+        color: #5f6368;
         text-decoration: none;
-        padding: 0.4rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        transition: all 0.2s ease;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin-left: 6px;
       }
 
-      .btn-logout:hover {
-        color: var(--ruby);
-        border-color: rgba(244, 63, 94, 0.4);
-        background: rgba(244, 63, 94, 0.08);
+      .btn-sheets-logout:hover {
+        background-color: #e8eaed;
+        color: #d93025;
       }
 
-      /* Control Deck */
-      .deck {
+      /* Action Toolbar */
+      .sheets-toolbar {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
+        background: #edf2fa;
+        padding: 4px 12px;
+        border-bottom: 1px solid #dadce0;
+        gap: 8px;
         flex-wrap: wrap;
       }
 
-      .search-wrapper {
-        position: relative;
-        min-width: 300px;
-        flex: 1;
-        max-width: 480px;
-      }
-
-      .search-input {
-        width: 100%;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-subtle);
-        border-radius: 8px;
-        padding: 0.65rem 2.5rem 0.65rem 1rem;
-        font-family: var(--font-body);
-        font-size: 0.88rem;
-        color: var(--text-primary);
-        outline: none;
-        transition: all 0.2s ease;
-      }
-
-      .search-input:focus {
-        border-color: var(--gold-primary);
-        box-shadow: 0 0 12px rgba(230, 177, 92, 0.15);
-        background: var(--bg-surface-elevated);
-      }
-
-      .search-hint {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        background: var(--bg-surface-elevated);
-        padding: 2px 6px;
+      .toolbar-btn {
+        background: transparent;
+        border: none;
+        padding: 6px 10px;
         border-radius: 4px;
-        border: 1px solid var(--border-subtle);
-        pointer-events: none;
-      }
-
-      .deck-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .btn {
-        font-family: var(--font-body);
-        font-size: 0.82rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        padding: 0.6rem 1.1rem;
-        border-radius: 8px;
-        border: 1px solid transparent;
+        font-size: 13px;
+        font-weight: 500;
+        color: #444746;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 6px;
+        transition: background 0.15s;
         text-decoration: none;
-        transition: all 0.2s ease;
       }
 
-      .btn-gold {
-        background: linear-gradient(135deg, var(--gold-primary), var(--gold-dim));
-        color: #0b0d10;
-        box-shadow: 0 4px 14px rgba(230, 177, 92, 0.2);
+      .toolbar-btn:hover {
+        background-color: #dbe4f0;
       }
 
-      .btn-gold:hover {
-        background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
-        box-shadow: 0 6px 18px rgba(230, 177, 92, 0.35);
-        transform: translateY(-1px);
+      .toolbar-btn-primary {
+        background-color: var(--sheets-green);
+        color: #ffffff;
       }
 
-      .btn-ghost {
-        background: var(--bg-surface);
-        border: 1px solid var(--border-subtle);
-        color: var(--text-secondary);
+      .toolbar-btn-primary:hover {
+        background-color: var(--sheets-green-hover);
+        color: #ffffff;
       }
 
-      .btn-ghost:hover {
-        background: var(--bg-surface-elevated);
-        color: var(--text-primary);
-        border-color: var(--border-gold);
+      .toolbar-divider {
+        width: 1px;
+        height: 18px;
+        background-color: #c4c7c5;
+        margin: 0 4px;
       }
 
-      /* Stats bar */
-      .stats-strip {
+      .toolbar-search {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 1rem;
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        background: #ffffff;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin-left: auto;
       }
 
-      .stat-item strong {
-        color: var(--gold-light);
-        font-family: var(--font-mono);
-      }
-
-      /* The Spreadsheet Ledger */
-      .ledger-frame {
-        background: var(--bg-surface);
-        border: 1px solid var(--border-subtle);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-        position: relative;
-      }
-
-      .table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-        font-size: 0.88rem;
-      }
-
-      thead {
-        background: #090c10;
-        border-bottom: 1px solid var(--border-gold);
-      }
-
-      th {
-        font-family: var(--font-display);
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--gold-light);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        padding: 1rem 1.25rem;
-        white-space: nowrap;
-      }
-
-      th:first-child {
-        width: 48px;
-        text-align: center;
-        color: var(--text-muted);
-      }
-
-      tbody tr {
-        border-bottom: 1px solid var(--border-subtle);
-        transition: background 0.15s ease;
-      }
-
-      tbody tr:last-child {
-        border-bottom: none;
-      }
-
-      tbody tr:hover {
-        background: var(--bg-surface-elevated);
-      }
-
-      .row-idx {
-        text-align: center;
-        color: var(--text-muted);
-        font-family: var(--font-mono);
-        font-size: 0.75rem;
-        user-select: none;
-        padding: 0.75rem 0.5rem;
-      }
-
-      td {
-        padding: 0.85rem 1.25rem;
-        font-family: var(--font-mono);
-        color: #e2e8f0;
-        white-space: nowrap;
-        position: relative;
-      }
-
-      td.editable {
-        cursor: pointer;
-        transition: background 0.15s, box-shadow 0.15s;
-      }
-
-      td.editable:hover {
-        background: rgba(230, 177, 92, 0.06);
-        color: var(--gold-light);
-      }
-
-      td.editable:hover::after {
-        content: "✎";
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 0.72rem;
-        color: var(--gold-dim);
-      }
-
-      td.editing {
-        padding: 0.35rem 0.6rem !important;
-        background: #06080b !important;
-      }
-
-      td.editing input {
-        width: 100%;
-        background: #06080b;
-        color: var(--gold-light);
-        border: 1px solid var(--gold-primary);
-        border-radius: 6px;
-        padding: 0.5rem 0.75rem;
-        font-family: var(--font-mono);
-        font-size: 0.88rem;
+      .toolbar-search input {
+        border: none;
         outline: none;
-        box-shadow: 0 0 10px rgba(230, 177, 92, 0.3);
+        font-size: 13px;
+        padding: 4px;
+        width: 180px;
       }
 
-      td.saving {
-        background-color: rgba(245, 158, 11, 0.15) !important;
+      /* Formula Bar */
+      .sheets-formula-bar {
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border-bottom: 1px solid #dadce0;
+        padding: 4px 12px;
+        gap: 8px;
       }
 
-      td.save-success {
-        background-color: rgba(16, 185, 129, 0.25) !important;
+      .cell-name-box {
+        width: 65px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 500;
+        color: #444746;
+        border-right: 1px solid #dadce0;
+        padding-right: 8px;
+        user-select: none;
+      }
+
+      .fx-icon {
+        font-style: italic;
+        font-weight: bold;
+        color: #5f6368;
+        font-size: 13px;
+        user-select: none;
+      }
+
+      .formula-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 13px;
+        font-family: Arial, sans-serif;
+        color: #202124;
+        padding: 2px 4px;
+      }
+
+      /* Main Spreadsheet Grid Container */
+      .sheets-viewport {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+        background: #ffffff;
+      }
+
+      table.sheets-grid {
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 13px;
+        color: #000000;
+        user-select: none;
+      }
+
+      /* Headers: Columns (A, B, C...) & Row Numbers (1, 2, 3...) */
+      th.col-header {
+        background: var(--sheets-header-bg);
+        color: var(--sheets-header-text);
+        border: 1px solid var(--sheets-border);
+        font-weight: normal;
+        text-align: center;
+        height: 24px;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        min-width: 140px;
+      }
+
+      th.corner-cell {
+        background: var(--sheets-header-bg);
+        border: 1px solid var(--sheets-border);
+        width: 46px;
+        min-width: 46px;
+        max-width: 46px;
+        position: sticky;
+        top: 0;
+        left: 0;
+        z-index: 3;
+      }
+
+      td.row-header {
+        background: var(--sheets-header-bg);
+        color: var(--sheets-header-text);
+        border: 1px solid var(--sheets-border);
+        text-align: center;
+        width: 46px;
+        min-width: 46px;
+        max-width: 46px;
+        font-size: 11px;
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        user-select: none;
+      }
+
+      /* Grid Cells */
+      td.grid-cell {
+        border: 1px solid var(--sheets-border);
+        padding: 0 6px;
+        height: 25px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: #ffffff;
+        cursor: cell;
+        position: relative;
+        vertical-align: middle;
+      }
+
+      /* Header Row Styling (Row 1) */
+      tr.header-row td.grid-cell {
+        font-weight: 600;
+        background-color: #f8f9fa;
+        color: #202124;
+      }
+
+      /* Active Cell Selection Box */
+      td.grid-cell.selected {
+        outline: 2px solid var(--sheets-select-border);
+        outline-offset: -2px;
+        z-index: 2;
+      }
+
+      /* Green fill-handle square in bottom right corner of selected cell */
+      td.grid-cell.selected::after {
+        content: "";
+        position: absolute;
+        bottom: -3px;
+        right: -3px;
+        width: 6px;
+        height: 6px;
+        background-color: var(--sheets-select-border);
+        border: 1px solid #ffffff;
+        cursor: crosshair;
+        z-index: 3;
+      }
+
+      /* Cell in Edit Mode */
+      td.grid-cell.editing {
+        padding: 0 !important;
+        background: #ffffff !important;
+        outline: 2px solid var(--sheets-select-border) !important;
+        z-index: 5 !important;
+      }
+
+      td.grid-cell.editing input {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 0 6px;
+        margin: 0;
+        background: #ffffff;
+      }
+
+      /* Saving indicator */
+      td.grid-cell.saving {
+        background-color: #fef7e0 !important;
+      }
+
+      td.grid-cell.save-success {
+        background-color: #e6f4ea !important;
         transition: background-color 0.8s ease;
       }
 
-      td.save-error {
-        background-color: rgba(244, 63, 94, 0.25) !important;
+      td.grid-cell.save-error {
+        background-color: #fce8e6 !important;
       }
 
-      /* Empty State */
-      .empty-box {
-        text-align: center;
-        padding: 4rem 1.5rem;
-        color: var(--text-muted);
+      /* Bottom Sheets Tab Bar */
+      .sheets-bottom-tabs {
+        display: flex;
+        align-items: center;
+        background: #f8f9fa;
+        border-top: 1px solid #dadce0;
+        height: 38px;
+        padding: 0 12px;
+        gap: 8px;
+        font-size: 13px;
       }
 
-      .empty-icon {
-        font-size: 2.5rem;
-        margin-bottom: 0.75rem;
-        opacity: 0.4;
+      .sheet-tab-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        padding: 6px 16px;
+        border-radius: 4px 4px 0 0;
+        border: 1px solid #dadce0;
+        border-bottom: 2px solid var(--sheets-green);
+        font-weight: 500;
+        color: #202124;
+        cursor: pointer;
       }
 
-      /* Modal */
-      .modal-backdrop {
+      .sheet-tab-plus {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: #5f6368;
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .sheet-tab-plus:hover {
+        background: #e8eaed;
+      }
+
+      .sheets-status-pill {
+        margin-left: auto;
+        font-size: 12px;
+        color: #5f6368;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--sheets-green);
+        border-radius: 50%;
+      }
+
+      /* Modal for Add Row */
+      .sheets-modal-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(4, 6, 9, 0.75);
-        backdrop-filter: blur(8px);
+        background: rgba(0, 0, 0, 0.4);
         display: none;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
         z-index: 1000;
-        padding: 1rem;
       }
 
-      .modal-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border-gold);
-        border-radius: 14px;
+      .sheets-modal {
+        background: #ffffff;
+        border-radius: 8px;
         width: 100%;
-        max-width: 520px;
-        padding: 1.75rem;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(230, 177, 92, 0.1);
-        position: relative;
-        animation: modalAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        max-width: 480px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       }
 
-      @keyframes modalAppear {
-        from { opacity: 0; transform: scale(0.96) translateY(8px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
+      .sheets-modal h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: #202124;
       }
 
-      .modal-title {
-        font-family: var(--font-display);
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin: 0 0 0.35rem 0;
-        color: var(--gold-light);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+      .sheets-modal-desc {
+        font-size: 13px;
+        color: #5f6368;
+        margin-bottom: 16px;
       }
 
-      .modal-desc {
-        color: var(--text-muted);
-        font-size: 0.82rem;
-        margin: 0 0 1.5rem 0;
+      .modal-field {
+        margin-bottom: 12px;
       }
 
-      .field-group {
-        margin-bottom: 1rem;
-      }
-
-      .field-label {
+      .modal-field label {
         display: block;
-        font-family: var(--font-display);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--gold-primary);
-        margin-bottom: 0.4rem;
+        font-size: 12px;
+        font-weight: 500;
+        color: #5f6368;
+        margin-bottom: 4px;
       }
 
-      .field-input {
+      .modal-field input {
         width: 100%;
-        background: var(--bg-abyss);
-        border: 1px solid var(--border-subtle);
-        border-radius: 6px;
-        padding: 0.6rem 0.85rem;
-        font-family: var(--font-mono);
-        font-size: 0.88rem;
-        color: var(--text-primary);
+        padding: 8px 10px;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
+        font-size: 13px;
         outline: none;
       }
 
-      .field-input:focus {
-        border-color: var(--gold-primary);
-        box-shadow: 0 0 10px rgba(230, 177, 92, 0.2);
+      .modal-field input:focus {
+        border-color: var(--sheets-green);
       }
 
-      .modal-footer {
+      .modal-buttons {
         display: flex;
         justify-content: flex-end;
-        gap: 0.75rem;
-        margin-top: 1.75rem;
+        gap: 8px;
+        margin-top: 20px;
       }
 
-      /* Toast notification */
-      #toastBox {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: var(--bg-surface-elevated);
-        border: 1px solid var(--border-gold);
-        padding: 0.85rem 1.4rem;
-        border-radius: 10px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-        display: none;
-        z-index: 2000;
-        font-family: var(--font-mono);
-        font-size: 0.82rem;
-        animation: toastIn 0.2s ease-out;
+      .btn-cancel {
+        background: #ffffff;
+        border: 1px solid #dadce0;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
       }
 
-      @keyframes toastIn {
-        from { transform: translateY(12px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
+      .btn-submit {
+        background: var(--sheets-green);
+        color: #ffffff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .btn-submit:hover {
+        background: var(--sheets-green-hover);
       }
     </style>
   </head>
   <body>
     {% csrf_token %}
-    <div class="container">
-      <!-- Header -->
-      <header>
-        <div class="brand">
-          <div class="crest">⚔</div>
-          <div>
-            <h1 class="brand-title">The Dungeoneers</h1>
-            <div class="brand-subtitle">
-              <span class="status-dot"></span>
-              Live Guild Operations Ledger
+
+    <!-- Top Navigation (Google Sheets Header) -->
+    <div class="sheets-top-header">
+      <div class="sheets-title-container">
+        <!-- Google Sheets Icon -->
+        <svg class="sheets-app-icon" viewBox="0 0 40 40">
+          <path fill="#0F9D58" d="M25 4H10c-1.1 0-2 .9-2 2v28c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V11l-7-7z"/>
+          <path fill="#87CEAB" d="M25 4v7h7l-7-7z"/>
+          <path fill="#FFFFFF" d="M14 18h12v2H14zm0 4h12v2H14zm0 4h8v2H14z"/>
+        </svg>
+
+        <div class="sheets-doc-details">
+          <div class="sheets-title-row">
+            <span class="sheets-doc-title">Dungeoneers CTA</span>
+            <div class="sheets-save-status">
+              <span id="saveStatusText">☁ All changes saved to Drive</span>
             </div>
           </div>
-        </div>
-
-        <div class="user-panel">
-          <div class="user-avatar">
-            {% if avatar_url %}
-            <img src="{{ avatar_url }}" alt="{{ username }}" />
-            {% else %}
-            <span>{{ username|slice:":1"|upper }}</span>
-            {% endif %}
+          <div class="sheets-menu-row">
+            <span class="menu-item">File</span>
+            <span class="menu-item">Edit</span>
+            <span class="menu-item">View</span>
+            <span class="menu-item">Insert</span>
+            <span class="menu-item">Format</span>
+            <span class="menu-item">Data</span>
+            <span class="menu-item">Tools</span>
+            <span class="menu-item">Help</span>
           </div>
-          <div class="user-meta">
-            <span class="user-name">{{ username }}</span>
-            <span class="user-badge">&#10003; Verified Member</span>
-          </div>
-          <a href="{% url 'discord_logout' %}" class="btn-logout">Exit</a>
-        </div>
-      </header>
-
-      {% if messages %}
-        {% for message in messages %}
-        <div style="background: rgba(230, 177, 92, 0.08); border: 1px solid var(--border-gold); color: var(--gold-light); padding: 0.75rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.85rem; font-family: var(--font-mono);">
-          {{ message }}
-        </div>
-        {% endfor %}
-      {% endif %}
-
-      <!-- Control Deck -->
-      <div class="deck">
-        <div class="search-wrapper">
-          <input
-            type="text"
-            id="tableFilter"
-            class="search-input"
-            placeholder="Search records across all fields..."
-            onkeyup="filterRows()"
-          />
-          <span class="search-hint">/</span>
-        </div>
-
-        <div class="deck-actions">
-          <button class="btn btn-gold" onclick="openModal()">
-            <span>+</span> Append Entry
-          </button>
-          <a href="?refresh=1" class="btn btn-ghost" title="Bypass cache and pull fresh data">
-            <span>↻</span> Force Sync
-          </a>
         </div>
       </div>
 
-      <div class="stats-strip">
-        <div class="stat-item">Total Rows: <strong id="totalCount">{{ rows|length }}</strong></div>
-        <div class="stat-item">Editing: <strong style="color: var(--text-muted)">Double-Click Cell</strong></div>
-        <div class="stat-item">Security: <strong style="color: var(--emerald)">Discord Role Gated</strong></div>
-      </div>
-
-      <!-- Table Frame -->
-      <div class="ledger-frame">
-        {% if rows or headers %}
-        <div class="table-wrapper">
-          <table id="ledgerTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                {% for header in headers %}
-                <th>{{ header }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in rows %}
-              <tr data-row-idx="{{ forloop.counter }}">
-                <td class="row-idx">{{ forloop.counter }}</td>
-                {% for cell in row %}
-                <td
-                  class="editable"
-                  data-row="{{ forloop.parentloop.counter|add:1 }}"
-                  data-col="{{ forloop.counter }}"
-                  ondblclick="startCellEdit(this)"
-                >{{ cell }}</td>
-                {% endfor %}
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <!-- Verified Discord Member Profile -->
+      <div class="discord-auth-pill">
+        <div class="discord-avatar">
+          {% if avatar_url %}
+          <img src="{{ avatar_url }}" alt="{{ username }}" />
+          {% else %}
+          <span>{{ username|slice:":1"|upper }}</span>
+          {% endif %}
         </div>
-        {% else %}
-        <div class="empty-box">
-          <div class="empty-icon">📜</div>
-          <p style="margin: 0; font-family: var(--font-display); font-size: 1rem; color: var(--gold-light);">No records currently cataloged.</p>
-          <p style="margin-top: 0.5rem; font-size: 0.8rem;">Click "+ Append Entry" above to add your first record to the Google Sheet.</p>
+        <div class="discord-user-info">
+          <span class="discord-username">{{ username }}</span>
+          <span class="discord-role-badge">✓ Verified Member</span>
         </div>
-        {% endif %}
+        <a href="{% url 'discord_logout' %}" class="btn-sheets-logout" title="Sign out">Log out</a>
       </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toastBox"></div>
+    <!-- Toolbar -->
+    <div class="sheets-toolbar">
+      <button class="toolbar-btn toolbar-btn-primary" onclick="openAddRowModal()">
+        <span>＋</span> Add Row
+      </button>
+      <a href="?refresh=1" class="toolbar-btn" title="Refresh records from Google Sheets">
+        <span>↻</span> Sync
+      </a>
+      <div class="toolbar-divider"></div>
+      <span style="font-size: 12px; color: #5f6368;">Double-click or select a cell to edit</span>
 
-    <!-- Add Record Modal -->
-    <div id="recordModal" class="modal-backdrop">
-      <div class="modal-card">
-        <h3 class="modal-title">New Guild Ledger Entry</h3>
-        <p class="modal-desc">This entry will be instantly added to the live Google Sheet.</p>
-        <form id="recordForm" onsubmit="handleFormSubmit(event)">
+      <div class="toolbar-search">
+        <span style="color: #5f6368; font-size: 13px;">🔍</span>
+        <input type="text" id="gridFilter" placeholder="Filter rows..." onkeyup="filterGrid()" />
+      </div>
+    </div>
+
+    <!-- Formula Bar -->
+    <div class="sheets-formula-bar">
+      <div class="cell-name-box" id="activeCellName">A1</div>
+      <div class="fx-icon">fx</div>
+      <input type="text" class="formula-input" id="formulaInput" placeholder="" onkeyup="handleFormulaInput(event)" />
+    </div>
+
+    <!-- Main Spreadsheet Grid Viewport -->
+    <div class="sheets-viewport">
+      <table class="sheets-grid" id="sheetsTable">
+        <thead>
+          <tr>
+            <th class="corner-cell"></th>
+            {% for header in headers %}
+            <th class="col-header" data-col-letter="">
+              <!-- Alphabet column letters: A, B, C... -->
+              <span class="col-letter"></span>
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row 1: Headers from Google Sheet -->
+          <tr class="header-row" data-row-num="1">
+            <td class="row-header">1</td>
+            {% for header in headers %}
+            <td
+              class="grid-cell"
+              data-row="1"
+              data-col="{{ forloop.counter }}"
+              onclick="selectCell(this)"
+              ondblclick="startEdit(this)"
+            >{{ header }}</td>
+            {% endfor %}
+          </tr>
+
+          <!-- Rows 2..N: Data Rows -->
+          {% for row in rows %}
+          <tr data-row-num="{{ forloop.counter|add:1 }}">
+            <td class="row-header">{{ forloop.counter|add:1 }}</td>
+            {% for cell in row %}
+            <td
+              class="grid-cell"
+              data-row="{{ forloop.parentloop.counter|add:1 }}"
+              data-col="{{ forloop.counter }}"
+              onclick="selectCell(this)"
+              ondblclick="startEdit(this)"
+            >{{ cell }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bottom Tab Bar -->
+    <div class="sheets-bottom-tabs">
+      <div class="sheet-tab-plus" onclick="openAddRowModal()" title="Add Row">＋</div>
+      <div class="sheet-tab-btn">
+        <span>Sheet1</span>
+      </div>
+      <div class="sheets-status-pill">
+        <span class="pulse-dot"></span>
+        <span>Connected to Google Sheets</span>
+      </div>
+    </div>
+
+    <!-- Modal for Adding New Row -->
+    <div id="addRowModal" class="sheets-modal-backdrop">
+      <div class="sheets-modal">
+        <h3>Insert New Row</h3>
+        <p class="sheets-modal-desc">This entry will be appended directly to the Google Sheet.</p>
+        <form id="addRowForm" onsubmit="submitRowForm(event)">
           {% for header in headers %}
-          <div class="field-group">
-            <label class="field-label">{{ header }}</label>
-            <input type="text" class="field-input" name="col_{{ forloop.counter }}" placeholder="Enter {{ header }}..." />
+          <div class="modal-field">
+            <label>{{ header }}</label>
+            <input type="text" class="modal-input-val" placeholder="Enter {{ header }}" />
           </div>
           {% endfor %}
-          <div class="modal-footer">
-            <button type="button" class="btn btn-ghost" onclick="closeModal()">Dismiss</button>
-            <button type="submit" class="btn btn-gold">Commit to Sheet</button>
+          <div class="modal-buttons">
+            <button type="button" class="btn-cancel" onclick="closeAddRowModal()">Cancel</button>
+            <button type="submit" class="btn-submit">Add to Sheet</button>
           </div>
         </form>
       </div>
     </div>
 
     <script>
+      let currentSelectedCell = null;
+
+      // Assign column letters (A, B, C, D...) to table header
+      function assignColumnLetters() {
+        const headers = document.querySelectorAll('th.col-header');
+        headers.forEach((th, idx) => {
+          let letter = '';
+          let temp = idx;
+          while (temp >= 0) {
+            letter = String.fromCharCode((temp % 26) + 65) + letter;
+            temp = Math.floor(temp / 26) - 1;
+          }
+          th.querySelector('.col-letter').textContent = letter;
+          th.setAttribute('data-col-letter', letter);
+        });
+      }
+
+      function getColLetter(colIdx) {
+        let temp = colIdx - 1;
+        let letter = '';
+        while (temp >= 0) {
+          letter = String.fromCharCode((temp % 26) + 65) + letter;
+          temp = Math.floor(temp / 26) - 1;
+        }
+        return letter;
+      }
+
       function getCsrfToken() {
         const el = document.querySelector('[name=csrfmiddlewaretoken]');
         return el ? el.value : '';
       }
 
-      function showToast(text, status = 'success') {
-        const box = document.getElementById('toastBox');
-        box.textContent = text;
-        box.style.borderColor = status === 'error' ? 'var(--ruby)' : 'var(--gold-primary)';
-        box.style.color = status === 'error' ? 'var(--ruby)' : 'var(--gold-light)';
-        box.style.display = 'block';
-        setTimeout(() => {
-          box.style.display = 'none';
-        }, 3200);
+      function setStatus(text) {
+        document.getElementById('saveStatusText').textContent = text;
       }
 
-      // Instant search filter
-      function filterRows() {
-        const query = document.getElementById('tableFilter').value.toLowerCase();
-        const trs = document.querySelectorAll('#ledgerTable tbody tr');
-        let matched = 0;
-        trs.forEach(tr => {
-          const content = tr.innerText.toLowerCase();
-          const match = content.includes(query);
-          tr.style.display = match ? '' : 'none';
-          if (match) matched++;
-        });
-        document.getElementById('totalCount').textContent = matched;
-      }
+      // Cell selection
+      function selectCell(cell) {
+        if (cell.classList.contains('editing')) return;
 
-      // Keyboard shortcut: '/' focuses search
-      window.addEventListener('keydown', (e) => {
-        if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
-          e.preventDefault();
-          document.getElementById('tableFilter').focus();
+        if (currentSelectedCell) {
+          currentSelectedCell.classList.remove('selected');
         }
-      });
 
-      // Cell Editing
-      function startCellEdit(cell) {
+        currentSelectedCell = cell;
+        cell.classList.add('selected');
+
+        const row = cell.getAttribute('data-row');
+        const col = parseInt(cell.getAttribute('data-col'));
+        const colLetter = getColLetter(col);
+
+        document.getElementById('activeCellName').textContent = `${colLetter}${row}`;
+        document.getElementById('formulaInput').value = cell.textContent.trim();
+      }
+
+      // Edit cell
+      function startEdit(cell) {
         if (cell.classList.contains('editing') || cell.classList.contains('saving')) return;
 
-        const original = cell.textContent.trim();
+        selectCell(cell);
+        const originalText = cell.textContent.trim();
         cell.classList.add('editing');
 
         const input = document.createElement('input');
         input.type = 'text';
-        input.value = original;
+        input.value = originalText;
         cell.textContent = '';
         cell.appendChild(input);
         input.focus();
         input.select();
 
-        let finalized = false;
+        let isDone = false;
 
-        function commit(save) {
-          if (finalized) return;
-          finalized = true;
+        function finish(save) {
+          if (isDone) return;
+          isDone = true;
 
           const newVal = input.value.trim();
           cell.classList.remove('editing');
 
-          if (!save || newVal === original) {
-            cell.textContent = original;
+          if (!save || newVal === originalText) {
+            cell.textContent = originalText;
+            document.getElementById('formulaInput').value = originalText;
             return;
           }
 
           cell.textContent = newVal;
-          saveCell(cell, original, newVal);
+          document.getElementById('formulaInput').value = newVal;
+          saveCell(cell, originalText, newVal);
         }
 
         input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') commit(true);
-          if (e.key === 'Escape') commit(false);
+          if (e.key === 'Enter') {
+            finish(true);
+            // Move selection to cell below (just like Google Sheets)
+            const nextRow = parseInt(cell.getAttribute('data-row')) + 1;
+            const col = cell.getAttribute('data-col');
+            const nextCell = document.querySelector(`td.grid-cell[data-row="${nextRow}"][data-col="${col}"]`);
+            if (nextCell) selectCell(nextCell);
+          } else if (e.key === 'Tab') {
+            e.preventDefault();
+            finish(true);
+            // Move selection to cell right (just like Google Sheets)
+            const row = cell.getAttribute('data-row');
+            const nextCol = parseInt(cell.getAttribute('data-col')) + 1;
+            const nextCell = document.querySelector(`td.grid-cell[data-row="${row}"][data-col="${nextCol}"]`);
+            if (nextCell) selectCell(nextCell);
+          } else if (e.key === 'Escape') {
+            finish(false);
+          }
         });
 
-        input.addEventListener('blur', () => commit(true));
+        input.addEventListener('blur', () => finish(true));
       }
 
+      // Formula Bar editing
+      function handleFormulaInput(e) {
+        if (!currentSelectedCell) return;
+        const val = document.getElementById('formulaInput').value;
+
+        if (e.key === 'Enter') {
+          const oldVal = currentSelectedCell.textContent.trim();
+          currentSelectedCell.textContent = val;
+          saveCell(currentSelectedCell, oldVal, val);
+        }
+      }
+
+      // Save to Django & Google Sheets API
       async function saveCell(cell, oldVal, newVal) {
         const row = cell.getAttribute('data-row');
         const col = cell.getAttribute('data-col');
 
         cell.classList.add('saving');
+        setStatus('⏳ Saving to Drive...');
 
         try {
           const res = await fetch("{% url 'api_update_cell' %}", {
@@ -818,37 +865,72 @@
 
           if (res.ok && data.success) {
             cell.classList.add('save-success');
-            showToast('✓ Cell updated in Google Sheet', 'success');
+            setStatus('☁ All changes saved to Drive');
             setTimeout(() => cell.classList.remove('save-success'), 1200);
           } else {
             cell.classList.add('save-error');
             cell.textContent = oldVal;
-            showToast(data.error || 'Failed to update cell.', 'error');
+            document.getElementById('formulaInput').value = oldVal;
+            setStatus('⚠️ Error saving change.');
+            alert(data.error || 'Failed to update cell in Google Sheet.');
             setTimeout(() => cell.classList.remove('save-error'), 2000);
           }
         } catch (err) {
           cell.classList.remove('saving');
           cell.classList.add('save-error');
           cell.textContent = oldVal;
-          showToast('Network disruption while saving cell.', 'error');
+          document.getElementById('formulaInput').value = oldVal;
+          setStatus('⚠️ Network error.');
           setTimeout(() => cell.classList.remove('save-error'), 2000);
         }
       }
 
-      function openModal() {
-        document.getElementById('recordModal').style.display = 'flex';
+      // Keyboard arrow navigation
+      window.addEventListener('keydown', (e) => {
+        if (!currentSelectedCell || currentSelectedCell.classList.contains('editing')) return;
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+          const r = parseInt(currentSelectedCell.getAttribute('data-row'));
+          const c = parseInt(currentSelectedCell.getAttribute('data-col'));
+          let target = null;
+
+          if (e.key === 'ArrowUp') target = document.querySelector(`td.grid-cell[data-row="${r-1}"][data-col="${c}"]`);
+          if (e.key === 'ArrowDown') target = document.querySelector(`td.grid-cell[data-row="${r+1}"][data-col="${c}"]`);
+          if (e.key === 'ArrowLeft') target = document.querySelector(`td.grid-cell[data-row="${r}"][data-col="${c-1}"]`);
+          if (e.key === 'ArrowRight') target = document.querySelector(`td.grid-cell[data-row="${r}"][data-col="${c+1}"]`);
+
+          if (target) selectCell(target);
+        } else if (e.key === 'Enter') {
+          startEdit(currentSelectedCell);
+        }
+      });
+
+      // Filter rows
+      function filterGrid() {
+        const query = document.getElementById('gridFilter').value.toLowerCase();
+        const trs = document.querySelectorAll('#sheetsTable tbody tr:not(.header-row)');
+        trs.forEach(tr => {
+          const match = tr.innerText.toLowerCase().includes(query);
+          tr.style.display = match ? '' : 'none';
+        });
       }
 
-      function closeModal() {
-        document.getElementById('recordModal').style.display = 'none';
-        document.getElementById('recordForm').reset();
+      // Modal
+      function openAddRowModal() {
+        document.getElementById('addRowModal').style.display = 'flex';
       }
 
-      async function handleFormSubmit(e) {
+      function closeAddRowModal() {
+        document.getElementById('addRowModal').style.display = 'none';
+        document.getElementById('addRowForm').reset();
+      }
+
+      async function submitRowForm(e) {
         e.preventDefault();
-        const form = e.target;
-        const inputs = Array.from(form.querySelectorAll('.field-input'));
+        const inputs = Array.from(document.querySelectorAll('.modal-input-val'));
         const values = inputs.map(i => i.value.trim());
+
+        setStatus('⏳ Inserting row into Google Sheet...');
 
         try {
           const res = await fetch("{% url 'api_add_row' %}", {
@@ -862,16 +944,26 @@
 
           const data = await res.json();
           if (res.ok && data.success) {
-            closeModal();
-            showToast('✓ Record appended to Google Sheet! Refreshing...', 'success');
-            setTimeout(() => window.location.reload(), 700);
+            closeAddRowModal();
+            setStatus('☁ All changes saved to Drive');
+            window.location.reload();
           } else {
-            showToast(data.error || 'Failed to append record.', 'error');
+            alert(data.error || 'Failed to add row.');
+            setStatus('⚠️ Error inserting row.');
           }
         } catch (err) {
-          showToast('Network error while committing record.', 'error');
+          alert('Network disruption while adding row.');
+          setStatus('⚠️ Error inserting row.');
         }
       }
+
+      // Initialize on load
+      window.addEventListener('DOMContentLoaded', () => {
+        assignColumnLetters();
+        // Select first cell A1 by default
+        const firstCell = document.querySelector('td.grid-cell');
+        if (firstCell) selectCell(firstCell);
+      });
     </script>
   </body>
 </html>
