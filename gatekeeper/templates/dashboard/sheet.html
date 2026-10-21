@@ -420,23 +420,51 @@
         background: #f8f9fa;
         border-top: 1px solid #dadce0;
         height: 38px;
-        padding: 0 12px;
-        gap: 8px;
+        padding: 0 8px;
+        gap: 6px;
         font-size: 13px;
+        overflow: hidden;
+      }
+
+      .tabs-scroll-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        flex: 1;
+        padding-top: 4px;
       }
 
       .sheet-tab-btn {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: #ffffff;
-        padding: 6px 16px;
-        border-radius: 4px 4px 0 0;
+        background: #f1f3f4;
+        padding: 6px 14px;
+        border-radius: 6px 6px 0 0;
         border: 1px solid #dadce0;
-        border-bottom: 2px solid var(--sheets-green);
+        border-bottom: none;
         font-weight: 500;
-        color: #202124;
+        color: #3c4043;
+        text-decoration: none;
         cursor: pointer;
+        font-size: 12px;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+
+      .sheet-tab-btn:hover {
+        background: #e8eaed;
+        color: #202124;
+      }
+
+      .sheet-tab-btn.active {
+        background: #ffffff;
+        color: var(--sheets-green);
+        border-bottom: 3px solid var(--sheets-green);
+        font-weight: 600;
       }
 
       .sheet-tab-plus {
@@ -575,7 +603,7 @@
 
         <div class="sheets-doc-details">
           <div class="sheets-title-row">
-            <span class="sheets-doc-title">Dungeoneers CTA</span>
+            <span class="sheets-doc-title">{{ doc_title }}</span>
             <div class="sheets-save-status">
               <span id="saveStatusText">☁ All changes saved to Drive</span>
             </div>
@@ -615,7 +643,7 @@
       <button class="toolbar-btn toolbar-btn-primary" onclick="openAddRowModal()">
         <span>＋</span> Add Row
       </button>
-      <a href="?refresh=1" class="toolbar-btn" title="Refresh records from Google Sheets">
+      <a href="?refresh=1{% if active_tab_id %}&gid={{ active_tab_id }}{% endif %}" class="toolbar-btn" title="Refresh records from Google Sheets">
         <span>↻</span> Sync
       </a>
       <div class="toolbar-divider"></div>
@@ -685,12 +713,24 @@
     <!-- Bottom Tab Bar -->
     <div class="sheets-bottom-tabs">
       <div class="sheet-tab-plus" onclick="openAddRowModal()" title="Add Row">＋</div>
-      <div class="sheet-tab-btn">
-        <span>Sheet1</span>
+      <div class="tabs-scroll-container">
+        {% for tab in tabs %}
+        <a
+          href="?gid={{ tab.id }}"
+          class="sheet-tab-btn {% if tab.active %}active{% endif %}"
+          title="{{ tab.title }}"
+        >
+          <span>{{ tab.title }}</span>
+        </a>
+        {% empty %}
+        <div class="sheet-tab-btn active">
+          <span>Sheet1</span>
+        </div>
+        {% endfor %}
       </div>
       <div class="sheets-status-pill">
         <span class="pulse-dot"></span>
-        <span>Connected to Google Sheets</span>
+        <span>Connected</span>
       </div>
     </div>
 
@@ -716,6 +756,7 @@
 
     <script>
       let currentSelectedCell = null;
+      const activeGid = "{{ active_tab_id }}";
 
       // Assign column letters (A, B, C, D...) to table header
       function assignColumnLetters() {
@@ -857,7 +898,7 @@
               'Content-Type': 'application/json',
               'X-CSRFToken': getCsrfToken(),
             },
-            body: JSON.stringify({ row: parseInt(row), col: parseInt(col), value: newVal })
+            body: JSON.stringify({ row: parseInt(row), col: parseInt(col), value: newVal, gid: activeGid })
           });
 
           const data = await res.json();
@@ -939,7 +980,7 @@
               'Content-Type': 'application/json',
               'X-CSRFToken': getCsrfToken(),
             },
-            body: JSON.stringify({ values: values })
+            body: JSON.stringify({ values: values, gid: activeGid })
           });
 
           const data = await res.json();

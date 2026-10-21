@@ -131,19 +131,31 @@ def discord_callback(request):
 def sheet_dashboard_view(request):
     """Renders the Google Sheet data for verified members."""
     force_refresh = request.GET.get('refresh') == '1'
+    gid = request.GET.get('gid')
 
     try:
-        data = get_sheet_data(force_refresh=force_refresh)
+        data = get_sheet_data(force_refresh=force_refresh, gid=gid)
         if force_refresh:
             messages.success(request, "Sheet data refreshed from Google Sheets.")
     except Exception as e:
         logger.exception("Failed to retrieve Google Sheet records: %s", e)
-        data = {'headers': [], 'rows': []}
+        data = {
+            'doc_title': 'Spreadsheet',
+            'headers': [],
+            'rows': [],
+            'tabs': [],
+            'active_tab_id': '',
+            'active_tab_title': '',
+        }
         messages.error(request, "Unable to fetch the latest spreadsheet data. Please try again shortly.")
 
     return render(request, 'dashboard/sheet.html', {
+        'doc_title': data.get('doc_title', 'Spreadsheet'),
         'headers': data.get('headers', []),
         'rows': data.get('rows', []),
+        'tabs': data.get('tabs', []),
+        'active_tab_id': data.get('active_tab_id', ''),
+        'active_tab_title': data.get('active_tab_title', ''),
         'username': request.session.get('discord_username', 'Member'),
         'avatar_url': request.session.get('discord_avatar_url'),
     })
@@ -155,7 +167,7 @@ def update_cell_api(request):
     """
     API endpoint for updating a cell in the Google Sheet.
     Protected by Discord role verification.
-    Accepts JSON payload: { "row": 2, "col": 1, "value": "New Content" }
+    Accepts JSON payload: { "row": 2, "col": 1, "value": "New Content", "gid": "1431495942" }
     """
     try:
         try:
@@ -166,11 +178,12 @@ def update_cell_api(request):
         row = int(payload.get('row'))
         col = int(payload.get('col'))
         value = str(payload.get('value', ''))
+        gid = payload.get('gid')
 
         if row < 1 or col < 1:
             return JsonResponse({'success': False, 'error': 'Row and Col must be positive integers (1-indexed).'}, status=400)
 
-        update_sheet_cell(row, col, value)
+        update_sheet_cell(row, col, value, gid=gid)
         return JsonResponse({'success': True, 'message': 'Cell updated successfully.'})
 
     except (TypeError, ValueError) as e:
@@ -186,7 +199,7 @@ def add_row_api(request):
     """
     API endpoint for appending a new row to the Google Sheet.
     Protected by Discord role verification.
-    Accepts JSON payload: { "values": ["val1", "val2", ...] }
+    Accepts JSON payload: { "values": ["val1", "val2", ...], "gid": "1431495942" }
     """
     try:
         try:
@@ -195,10 +208,12 @@ def add_row_api(request):
             payload = request.POST
 
         values = payload.get('values')
+        gid = payload.get('gid')
+
         if not isinstance(values, list):
             return JsonResponse({'success': False, 'error': 'values must be a list of strings.'}, status=400)
 
-        add_sheet_row(values)
+        add_sheet_row(values, gid=gid)
         return JsonResponse({'success': True, 'message': 'Row added successfully.'})
 
     except Exception as e:

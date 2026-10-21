@@ -109,7 +109,7 @@ class SheetEditingAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data.get('success'))
-        mock_update_cell.assert_called_once_with(2, 1, 'NewLeader')
+        mock_update_cell.assert_called_once_with(2, 1, 'NewLeader', gid=None)
 
     def test_update_cell_unauthenticated_rejected(self):
         """Unauthenticated user receives a 401 JSON error from the API."""
@@ -156,7 +156,7 @@ class SheetEditingAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json().get('success'))
-        mock_add_row.assert_called_once_with(['Newbie', 'Guild Member', 'Bow', 'Ready'])
+        mock_add_row.assert_called_once_with(['Newbie', 'Guild Member', 'Bow', 'Ready'], gid=None)
 
 
 class ServicesUnitTests(TestCase):
@@ -193,11 +193,17 @@ class ServicesUnitTests(TestCase):
         """Verify sheet data is cached and invalidated on cell update."""
         mock_gc = MagicMock()
         mock_worksheet = MagicMock()
+        mock_worksheet.id = 0
+        mock_worksheet.title = 'Sheet1'
         mock_worksheet.get_all_values.return_value = [
             ['Name', 'Class'],
             ['Player1', 'Warrior']
         ]
-        mock_gc.open_by_key.return_value.sheet1 = mock_worksheet
+        mock_spreadsheet = MagicMock()
+        mock_spreadsheet.title = 'Sample Sheet'
+        mock_spreadsheet.worksheets.return_value = [mock_worksheet]
+        mock_spreadsheet.sheet1 = mock_worksheet
+        mock_gc.open_by_key.return_value = mock_spreadsheet
         mock_get_client.return_value = mock_gc
 
         # First read: hits Google Sheets
@@ -212,7 +218,7 @@ class ServicesUnitTests(TestCase):
 
         # Update cell: invalidates cache
         update_sheet_cell(2, 1, 'PlayerOne')
-        self.assertIsNone(cache.get(CACHE_KEY_SHEET))
+        self.assertIsNone(cache.get('google_sheet_records_sample_sheet_default'))
         mock_worksheet.update_cell.assert_called_once_with(2, 1, 'PlayerOne')
 
 
