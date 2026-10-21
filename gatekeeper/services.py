@@ -24,6 +24,48 @@ def rgb_to_css(color_dict):
     return f"rgb({r},{g},{b})"
 
 
+def resolve_cell_contrast(bg_dict, fg_dict):
+    """
+    Computes WCAG-compliant high-contrast background and foreground colors.
+    Fixes Google Sheets API cases where:
+    1. Dark colored cells (Tank blue, Healer green, DPS red, dark gray) have empty/default fg (rendered as black text).
+    2. White cells have white fg (e.g. Q/W/P spell slots), rendering text invisible.
+    """
+    bg_r = bg_dict.get('red', 1.0) if bg_dict else 1.0
+    bg_g = bg_dict.get('green', 1.0) if bg_dict else 1.0
+    bg_b = bg_dict.get('blue', 1.0) if bg_dict else 1.0
+    bg_lum = 0.299 * bg_r + 0.587 * bg_g + 0.114 * bg_b
+    is_bg_dark = (bg_lum < 0.65) and (bg_dict is not None)
+
+    has_fg = bool(fg_dict)
+    if has_fg:
+        fg_r = fg_dict.get('red', 0.0)
+        fg_g = fg_dict.get('green', 0.0)
+        fg_b = fg_dict.get('blue', 0.0)
+        fg_lum = 0.299 * fg_r + 0.587 * fg_g + 0.114 * fg_b
+    else:
+        fg_r, fg_g, fg_b = 0.0, 0.0, 0.0
+        fg_lum = 0.0
+
+    if is_bg_dark:
+        # On dark / saturated backgrounds, force bright white text for maximum readability
+        if not has_fg or fg_lum < 0.60:
+            final_fg = 'rgb(255,255,255)'
+        else:
+            final_fg = f"rgb({int(round(fg_r * 255))},{int(round(fg_g * 255))},{int(round(fg_b * 255))})"
+    else:
+        # On light or white backgrounds, ensure text is never invisible white
+        if has_fg and fg_lum > 0.68:
+            final_fg = 'rgb(32,33,36)'
+        elif has_fg:
+            final_fg = f"rgb({int(round(fg_r * 255))},{int(round(fg_g * 255))},{int(round(fg_b * 255))})"
+        else:
+            final_fg = ''
+
+    bg_css = f"rgb({int(round(bg_r * 255))},{int(round(bg_g * 255))},{int(round(bg_b * 255))})" if bg_dict and (bg_r, bg_g, bg_b) != (1.0, 1.0, 1.0) else ''
+    return bg_css, final_fg
+
+
 def get_col_letter(col_idx):
     """Converts 1-indexed column number to letter (1->A, 26->Z, 27->AA)."""
     temp = col_idx - 1
@@ -260,9 +302,10 @@ def get_sheet_data(force_refresh=False, gid=None):
                         continue
                     rowspan, colspan = merge_map.get((r_idx, c_idx), (1, 1))
                     fmt = cell.get('effectiveFormat', {})
-                    bg = rgb_to_css(fmt.get('backgroundColor'))
+                    bg_dict = fmt.get('backgroundColor')
                     tf = fmt.get('textFormat', {})
-                    fg = rgb_to_css(tf.get('foregroundColor'))
+                    fg_dict = tf.get('foregroundColor')
+                    bg, fg = resolve_cell_contrast(bg_dict, fg_dict)
                     bold = tf.get('bold', False)
                     align = fmt.get('horizontalAlignment', '').lower()
                     val = cell.get('formattedValue', '')
