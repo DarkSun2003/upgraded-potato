@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Access Denied - Guild Restricted</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0f172a;
+        color: #f8fafc;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        padding: 2.5rem;
+        border-radius: 12px;
+        max-width: 440px;
+        text-align: center;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      }
+      h2 {
+        margin-top: 0;
+        color: #f87171;
+      }
+      p {
+        color: #94a3b8;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+      }
+      .btn {
+        display: inline-block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.75rem 1rem;
+        background-color: #5865f2;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: background 0.2s;
+      }
+      .btn:hover {
+        background-color: #4752c4;
+      }
+      .secondary-link {
+        display: inline-block;
+        margin-top: 1rem;
+        color: #64748b;
+        font-size: 0.85rem;
+        text-decoration: none;
+      }
+      .secondary-link:hover {
+        color: #94a3b8;
+      }
+      .message-box {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid #ef4444;
+        color: #fca5a5;
+        padding: 0.6rem 0.8rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Access Restricted</h2>
+      {% if messages %}
+        {% for message in messages %}
+          <div class="message-box">{{ message }}</div>
+        {% endfor %}
+      {% else %}
+        <p>
+          You must be a member of our Discord server and possess the
+          <strong>Guild Member</strong> or <strong>Alliance</strong> role to view or edit
+          this sheet.
+        </p>
+      {% endif %}
+
+      <a href="{{ discord_invite_url }}" class="btn" target="_blank" rel="noopener noreferrer">
+        Join Our Discord Server
+      </a>
+      <a href="{% url 'discord_login' %}" class="secondary-link">
+        Try Authenticating Again &#8594;
+      </a>
+    </div>
+  </body>
+</html>

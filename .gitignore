@@ -1,0 +1,21 @@
+# Python & Virtual Environments
+myworld/
+venv/
+.venv/
+env/
+*.pyc
+__pycache__/
+
+# Database & Environment Secrets
+db.sqlite3
+.env
+google_credentials.json
+
+# Collected static files & uploads
+staticfiles/
+media/
+
+# Logs & Editor
+*.log
+.vscode/
+.idea/
