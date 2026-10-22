@@ -76,6 +76,46 @@ def get_col_letter(col_idx):
     return letter
 
 
+DEFAULT_ALBION_WEAPONS = [
+    'Fill', 'Fill tank', 'Clump Tank', '1h hammer', 'Polehammer', 'Greathammer', 'Grovekeeper', 'Truebolt hammer',
+    '1h mace', 'heavy mace', 'Infernal staff', 'HOJ', 'BMS', 'Golem', 'SOB', 'Stillgaze', '1h arcane', 'Great arcane',
+    'Hoarfrost', 'Icicle', 'Fill heals', 'Great holy', 'Fallen', 'Redemption', 'Hallowfall', 'Exalted', 'Wild staff',
+    'Blight', 'Rampant', 'Forgebark', '1H Nature', 'Fill DPS', 'Gala pair', 'Kingmaker', 'Infinity blade', 'Greataxe',
+    'Halberd', 'Infernal scythe', 'Bearpaws', 'Realmbreaker', 'Forge hammers', 'Bracers', 'Spiked', 'Ursine maulers',
+    'Hellfire hands', 'Bloodletter', 'Demonfang', 'Bridled', 'Daybreaker', 'Astral', 'Carioncaller', 'Trinity spear',
+    '1h crossbow', 'Heavy crossbow', 'Weeping', 'Boltcasters', 'Siegebow', 'Shaper', 'Longbow', 'Wailing', 'Rift glaive',
+    'Heron spear', 'Lightcaller', 'Great fire', 'Wildfire', 'Brimstone', 'Dawnsong', 'Glacial', 'Perma', 'Cursed skull',
+    'Rotcaller', 'Witchwork', 'Fill support', 'Carving', 'Bedrock', 'Incubus', 'Oathkeepers', 'Dreadstorm', 'Spirithunter',
+    'Rootbound', 'Enigmatic', 'Occult', 'Locus', 'Evensong', 'Lifecurse', 'Damnation', 'Shadowcaller', 'Fill BM',
+    'Beetle', 'Behemoth', 'Ballista', 'Eagle', 'Rhino', 'Mammy', 'Flame basi', 'Venom basi', 'Spider', 'Juggernaut',
+    'Bastion', 'Chariot'
+]
+
+
+def get_weapons_list(spreadsheet=None):
+    """Retrieves weapons list from 'Weapons List' tab with fallback to default CTA weapons."""
+    cached = cache.get('albion_weapons_list')
+    if cached:
+        return cached
+    if spreadsheet:
+        try:
+            ws = spreadsheet.worksheet('Weapons List')
+            vals = ws.get_values('C3:X8')
+            weapons = []
+            for r in vals:
+                for item in r:
+                    val = str(item).strip()
+                    if val and val not in weapons:
+                        weapons.append(val)
+            if weapons:
+                cache.set('albion_weapons_list', weapons, timeout=3600)
+                return weapons
+        except Exception as e:
+            logger.warning("Could not fetch Weapons List tab: %s", e)
+    cache.set('albion_weapons_list', DEFAULT_ALBION_WEAPONS, timeout=3600)
+    return DEFAULT_ALBION_WEAPONS
+
+
 _range_options_cache = {}
 
 
@@ -189,6 +229,7 @@ def get_sheet_data(force_refresh=False, gid=None):
         for r_idx, r in enumerate(_mock_sheet_store['rows']):
             row_cells = []
             for c_idx, val in enumerate(r):
+                is_weapon = (c_idx == 2 and r_idx > 0)
                 row_cells.append({
                     'row': r_idx + 1,
                     'col': c_idx + 1,
@@ -199,8 +240,8 @@ def get_sheet_data(force_refresh=False, gid=None):
                     'fg': '',
                     'bold': (r_idx == 0),
                     'align': 'left',
-                    'has_options': (c_idx == 2),
-                    'options_json': json.dumps(['Permafrost', 'Grovekeeper', 'Hallowfall', 'Bloodletter']) if c_idx == 2 else '',
+                    'has_options': is_weapon,
+                    'dropdown_type': 'weapons' if is_weapon else '',
                 })
             mock_grid.append(row_cells)
         return {
@@ -210,6 +251,7 @@ def get_sheet_data(force_refresh=False, gid=None):
             'grid_rows': mock_grid,
             'max_cols': len(headers),
             'col_letters': [get_col_letter(i + 1) for i in range(len(headers))],
+            'dropdown_presets': {'weapons': DEFAULT_ALBION_WEAPONS},
             'tabs': [
                 {'id': '0', 'title': 'Sheet1', 'active': True},
                 {'id': '1431495942', 'title': '21.10 Def Mire against Bolty', 'active': False},
@@ -261,6 +303,11 @@ def get_sheet_data(force_refresh=False, gid=None):
             for ws in worksheets
         ]
 
+        weapons_list = get_weapons_list(spreadsheet)
+        dropdown_presets = {
+            'weapons': weapons_list
+        }
+
         # Fetch styled grid with formatting, cell background/text colors, merges, and dropdowns
         grid_rows = []
         max_cols = 26
@@ -311,6 +358,17 @@ def get_sheet_data(force_refresh=False, gid=None):
                     val = cell.get('formattedValue', '')
                     options = resolve_validation_options(cell.get('dataValidation', {}).get('condition'), spreadsheet)
 
+                    is_weapon_dropdown = False
+                    if options and any(opt in weapons_list for opt in options[:10]):
+                        is_weapon_dropdown = True
+                    elif (c_idx + 1) in (4, 5, 6) and (r_idx + 1) >= 7:
+                        is_weapon_dropdown = True
+                    elif options:
+                        is_weapon_dropdown = True
+
+                    dropdown_type = 'weapons' if is_weapon_dropdown else ''
+                    has_options = is_weapon_dropdown or bool(options)
+
                     row_cells.append({
                         'row': r_idx + 1,
                         'col': c_idx + 1,
@@ -321,8 +379,8 @@ def get_sheet_data(force_refresh=False, gid=None):
                         'fg': fg,
                         'bold': bold,
                         'align': align,
-                        'has_options': bool(options),
-                        'options_json': json.dumps(options) if options else '',
+                        'has_options': has_options,
+                        'dropdown_type': dropdown_type,
                     })
                 grid_rows.append(row_cells)
 
@@ -335,6 +393,7 @@ def get_sheet_data(force_refresh=False, gid=None):
             for r_idx, r in enumerate(all_values[:65]):
                 row_cells = []
                 for c_idx, val in enumerate(r[:26]):
+                    is_weapon = ((c_idx + 1) in (4, 5, 6) and (r_idx + 1) >= 7)
                     row_cells.append({
                         'row': r_idx + 1,
                         'col': c_idx + 1,
@@ -345,10 +404,38 @@ def get_sheet_data(force_refresh=False, gid=None):
                         'fg': '',
                         'bold': False,
                         'align': 'left',
-                        'has_options': False,
-                        'options_json': '',
+                        'has_options': is_weapon,
+                        'dropdown_type': 'weapons' if is_weapon else '',
                     })
                 grid_rows.append(row_cells)
+
+        # Apply Google Sheets Conditional Formatting: Green both names (Signup List Col 3 <-> Party Player Col 11)
+        party_names = set()
+        for row in grid_rows:
+            for cell in row:
+                if cell.get('col') == 11:
+                    v = cell.get('val', '').strip().lower()
+                    if v and v not in ('player', 'weapon', 'offhand', 'role'):
+                        party_names.add(v)
+
+        signup_names = set()
+        for row in grid_rows:
+            for cell in row:
+                if cell.get('col') == 3:
+                    v = cell.get('val', '').strip().lower()
+                    if v and v not in ('name', 'disarray calculator', 'total signed-up', 'disarray level'):
+                        signup_names.add(v)
+
+        matched_names = party_names.intersection(signup_names)
+        for row in grid_rows:
+            for cell in row:
+                if cell.get('col') in (3, 11):
+                    v = cell.get('val', '').strip().lower()
+                    if v in matched_names:
+                        cell['is_green_matched'] = True
+                        cell['bg'] = 'rgb(183,225,205)'
+                        cell['fg'] = 'rgb(13,101,45)'
+                        cell['bold'] = True
 
         headers = [c['val'] for c in grid_rows[0]] if grid_rows else []
         raw_rows = [[c['val'] for c in r] for r in grid_rows[1:]] if len(grid_rows) > 1 else []
@@ -361,6 +448,7 @@ def get_sheet_data(force_refresh=False, gid=None):
             'grid_rows': grid_rows,
             'max_cols': max_cols,
             'col_letters': col_letters,
+            'dropdown_presets': dropdown_presets,
             'tabs': tabs,
             'active_tab_id': active_gid_str,
             'active_tab_title': target_worksheet.title,

@@ -10,6 +10,8 @@ from gatekeeper.services import (
     update_sheet_cell,
     add_sheet_row,
     reset_mock_sheet,
+    get_weapons_list,
+    DEFAULT_ALBION_WEAPONS,
     CACHE_KEY_SHEET
 )
 
@@ -240,3 +242,57 @@ class OAuthFlowTests(TestCase):
 
         response = self.client.get(reverse('discord_callback') + '?code=fake_code&state=wrong_state')
         self.assertRedirects(response, reverse('discord_login'), fetch_redirect_response=False)
+
+
+class DropdownAndFormattingTests(TestCase):
+
+    def setUp(self):
+        cache.clear()
+
+    def test_default_albion_weapons_list(self):
+        """Verify default Albion weapons list contains required weapons from Weapons List."""
+        weapons = get_weapons_list(None)
+        self.assertTrue(len(weapons) >= 100)
+        self.assertIn("Hallowfall", weapons)
+        self.assertIn("Perma", weapons)
+        self.assertIn("Golem", weapons)
+        self.assertIn("Spiked", weapons)
+        self.assertIn("Bedrock", weapons)
+
+    @patch('gatekeeper.services.get_gspread_client')
+    def test_green_conditional_formatting_matched_names(self, mock_get_client):
+        """When signup name (col 3) matches party player (col 11), both get highlighted green."""
+        mock_gc = MagicMock()
+        mock_worksheet = MagicMock()
+        mock_worksheet.id = '123'
+        mock_worksheet.title = 'CTA Sheet'
+        mock_worksheet.row_count = 10
+        mock_worksheet.col_count = 15
+
+        # Row with signup name in col 3 (index 2) and party player in col 11 (index 10)
+        grid_data = [
+            ['Header1', 'Header2', 'DarkSun', '', '', '', '', '', '', '', 'DarkSun', '']
+        ]
+        mock_worksheet.get_all_values.return_value = grid_data
+
+        mock_spreadsheet = MagicMock()
+        mock_spreadsheet.title = 'CTA'
+        mock_spreadsheet.worksheets.return_value = [mock_worksheet]
+        mock_spreadsheet.sheet1 = mock_worksheet
+        mock_spreadsheet.worksheet.return_value = mock_worksheet
+        mock_spreadsheet.fetch_sheet_metadata.side_effect = Exception("No rich metadata")
+        mock_gc.open_by_key.return_value = mock_spreadsheet
+        mock_get_client.return_value = mock_gc
+
+        with override_settings(GOOGLE_SHEET_ID='test_sheet_id', MOCK_DISCORD_AUTH=False):
+            data = get_sheet_data(force_refresh=True)
+
+        cells = data['grid_rows'][0]
+        col3_cell = next(c for c in cells if c['col'] == 3)
+        col11_cell = next(c for c in cells if c['col'] == 11)
+
+        self.assertTrue(col3_cell.get('is_green_matched'))
+        self.assertTrue(col11_cell.get('is_green_matched'))
+        self.assertEqual(col3_cell.get('bg'), 'rgb(183,225,205)')
+        self.assertEqual(col11_cell.get('bg'), 'rgb(183,225,205)')
+

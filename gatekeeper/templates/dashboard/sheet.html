@@ -425,29 +425,122 @@
         color: #202124 !important;
       }
 
-      /* Google Sheets Dropdown Arrow */
+      /* Google Sheets Conditional Formatting: Green Matched Names */
+      td.grid-cell.name-matched-green {
+        background-color: #b7e1cd !important;
+        color: #0d652d !important;
+        font-weight: bold !important;
+      }
+
+      /* Google Sheets Dropdown Cell & Trigger */
       td.grid-cell.has-dropdown {
         position: relative;
-        padding-right: 18px !important;
+        padding-right: 24px !important;
+        cursor: pointer;
       }
 
-      td.grid-cell.has-dropdown::after {
-        content: "▾";
+      .cell-dropdown-trigger {
         position: absolute;
-        right: 4px;
+        right: 3px;
         top: 50%;
         transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 11px;
         color: #5f6368;
-        pointer-events: none;
-        opacity: 0.7;
+        border-radius: 50%;
+        cursor: pointer;
+        user-select: none;
+        z-index: 3;
       }
 
-      td.grid-cell.has-dropdown:hover::after,
-      td.grid-cell.has-dropdown.selected::after {
-        opacity: 1;
+      .cell-dropdown-trigger:hover,
+      td.grid-cell.has-dropdown:hover .cell-dropdown-trigger {
+        background: rgba(0, 0, 0, 0.08);
         color: var(--sheets-green);
         font-weight: bold;
+      }
+
+      /* Floating Google Sheets Dropdown Popover Menu */
+      .sheets-dropdown-popover {
+        position: fixed;
+        z-index: 9999;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.24);
+        border: 1px solid #dadce0;
+        width: 260px;
+        max-height: 320px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .dropdown-search-wrapper {
+        padding: 8px 10px;
+        border-bottom: 1px solid #e8eaed;
+        background: #f8f9fa;
+      }
+
+      .dropdown-search-wrapper input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
+        font-size: 13px;
+        outline: none;
+        font-family: inherit;
+        background: #ffffff;
+        box-sizing: border-box;
+      }
+
+      .dropdown-search-wrapper input:focus {
+        border-color: var(--sheets-green);
+        box-shadow: 0 0 0 1px var(--sheets-green);
+      }
+
+      .dropdown-items-list {
+        overflow-y: auto;
+        max-height: 250px;
+        padding: 4px 0;
+      }
+
+      .dropdown-item {
+        padding: 7px 14px;
+        font-size: 13px;
+        color: #202124;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+      }
+
+      .dropdown-item:hover, .dropdown-item.active {
+        background-color: #e8f0fe;
+        color: #174ea6;
+      }
+
+      .dropdown-item.selected {
+        font-weight: 600;
+        background-color: #e6f4ea;
+        color: #137333;
+      }
+
+      .dropdown-item-check {
+        font-size: 13px;
+        color: #137333;
+        font-weight: bold;
+      }
+
+      .dropdown-empty {
+        padding: 16px;
+        font-size: 12px;
+        color: #5f6368;
+        text-align: center;
       }
 
       /* Saving indicator */
@@ -732,16 +825,22 @@
             <td class="row-header">{{ forloop.counter }}</td>
             {% for cell in row %}
             <td
-              class="grid-cell {% if cell.has_options %}has-dropdown{% endif %}"
+              class="grid-cell {% if cell.has_options %}has-dropdown{% endif %} {% if cell.is_green_matched %}name-matched-green{% endif %}"
               data-row="{{ cell.row }}"
               data-col="{{ cell.col }}"
               {% if cell.colspan > 1 %}colspan="{{ cell.colspan }}"{% endif %}
               {% if cell.rowspan > 1 %}rowspan="{{ cell.rowspan }}"{% endif %}
-              {% if cell.has_options %}data-options="{{ cell.options_json }}"{% endif %}
+              {% if cell.dropdown_type %}data-dropdown="{{ cell.dropdown_type }}"{% endif %}
+              {% if cell.options_json %}data-options="{{ cell.options_json }}"{% endif %}
               style="{% if cell.bg %}background-color: {{ cell.bg }};{% endif %}{% if cell.fg %}color: {{ cell.fg }};{% endif %}{% if cell.bold %}font-weight: bold;{% endif %}{% if cell.align %}text-align: {{ cell.align }};{% endif %}"
-              onclick="selectCell(this)"
+              onclick="handleCellClick(this, event)"
               ondblclick="startEdit(this)"
-            >{{ cell.val }}</td>
+            >
+              <span class="cell-text">{{ cell.val }}</span>
+              {% if cell.has_options %}
+              <span class="cell-dropdown-trigger" onclick="event.stopPropagation(); triggerDropdown(this.parentElement);">▾</span>
+              {% endif %}
+            </td>
             {% endfor %}
           </tr>
           {% endfor %}
@@ -803,9 +902,23 @@
       </div>
     </div>
 
+    <!-- Floating Google Sheets Dropdown Popover Menu -->
+    <div id="sheetsDropdownMenu" class="sheets-dropdown-popover" style="display: none;">
+      <div class="dropdown-search-wrapper">
+        <input type="text" id="dropdownSearchInput" placeholder="Search weapons..." autocomplete="off" oninput="filterDropdownOptions()" onkeydown="handleDropdownKeydown(event)" />
+      </div>
+      <div class="dropdown-items-list" id="dropdownItemsList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
     <script>
       let currentSelectedCell = null;
+      let activeDropdownCell = null;
+      let filteredDropdownOptions = [];
+      let activeDropdownIndex = -1;
       const activeGid = "{{ active_tab_id }}";
+      const DROPDOWN_PRESETS = {{ dropdown_presets_json|safe }};
 
       // Assign column letters (A, B, C, D...) to table header
       function assignColumnLetters() {
@@ -838,8 +951,20 @@
         document.getElementById('saveStatusText').textContent = text;
       }
 
+      function getCellText(cell) {
+        if (!cell) return '';
+        const textSpan = cell.querySelector('.cell-text');
+        if (textSpan) return textSpan.textContent.trim();
+        const raw = cell.getAttribute('data-raw');
+        if (raw !== null) return raw.trim();
+        return cell.textContent.replace('▾', '').trim();
+      }
+
       function renderCellContent(cell, val) {
         cell.setAttribute('data-raw', val);
+        const hasDropdown = cell.classList.contains('has-dropdown') || cell.hasAttribute('data-dropdown') || cell.hasAttribute('data-options');
+
+        let contentHtml = '';
         if (val.startsWith('http://') || val.startsWith('https://')) {
           let label = '🔗 External Link ↗';
           if (val.includes('docs.google.com/spreadsheets')) {
@@ -847,26 +972,207 @@
           } else if (val.includes('discord.gg') || val.includes('discord.com')) {
             label = '🎮 Discord Link ↗';
           }
-          cell.innerHTML = `<a href="${val}" target="_blank" rel="noopener noreferrer" class="cell-link-pill" onclick="event.stopPropagation()" title="${val}">${label}</a>`;
+          contentHtml = `<a href="${val}" target="_blank" rel="noopener noreferrer" class="cell-link-pill" onclick="event.stopPropagation()" title="${val}">${label}</a>`;
         } else {
-          cell.textContent = val;
+          const span = document.createElement('span');
+          span.className = 'cell-text';
+          span.textContent = val;
+          contentHtml = span.outerHTML;
         }
+
+        if (hasDropdown) {
+          contentHtml += `<span class="cell-dropdown-trigger" onclick="event.stopPropagation(); triggerDropdown(this.parentElement);">▾</span>`;
+        }
+        cell.innerHTML = contentHtml;
       }
 
       function formatAllCells() {
         document.querySelectorAll('td.grid-cell').forEach(cell => {
-          renderCellContent(cell, cell.textContent.trim());
+          const raw = cell.getAttribute('data-raw') !== null ? cell.getAttribute('data-raw') : getCellText(cell);
+          renderCellContent(cell, raw);
         });
       }
 
-      // Cell selection
-      function selectCell(cell) {
-        if (cell.classList.contains('editing')) return;
+      // Dropdown Options Resolution
+      function getCellOptions(cell) {
+        const dropdownType = cell.getAttribute('data-dropdown');
+        if (dropdownType && DROPDOWN_PRESETS && DROPDOWN_PRESETS[dropdownType]) {
+          return DROPDOWN_PRESETS[dropdownType];
+        }
+        const rawOpts = cell.getAttribute('data-options');
+        if (rawOpts) {
+          try {
+            const parsed = JSON.parse(rawOpts);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          } catch (e) {}
+        }
+        if (cell.classList.contains('has-dropdown') && DROPDOWN_PRESETS && DROPDOWN_PRESETS['weapons']) {
+          return DROPDOWN_PRESETS['weapons'];
+        }
+        return [];
+      }
 
-        if (currentSelectedCell === cell && cell.classList.contains('has-dropdown')) {
-          startEdit(cell);
+      // Dropdown UI Handling
+      function triggerDropdown(cell) {
+        selectCell(cell);
+        openDropdown(cell);
+      }
+
+      function openDropdown(cell) {
+        const options = getCellOptions(cell);
+        if (!options || options.length === 0) return;
+
+        activeDropdownCell = cell;
+        const menu = document.getElementById('sheetsDropdownMenu');
+        const searchInput = document.getElementById('dropdownSearchInput');
+        searchInput.value = '';
+
+        const cellRect = cell.getBoundingClientRect();
+        const menuWidth = 260;
+        const menuMaxHeight = 300;
+
+        let left = cellRect.left;
+        let top = cellRect.bottom + 2;
+
+        if (left + menuWidth > window.innerWidth) {
+          left = Math.max(10, window.innerWidth - menuWidth - 16);
+        }
+
+        if (top + menuMaxHeight > window.innerHeight) {
+          top = Math.max(10, cellRect.top - menuMaxHeight - 2);
+        }
+
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        menu.style.display = 'flex';
+
+        renderDropdownItems(options, getCellText(cell));
+        searchInput.focus();
+      }
+
+      function closeDropdown() {
+        const menu = document.getElementById('sheetsDropdownMenu');
+        if (menu) {
+          menu.style.display = 'none';
+        }
+        activeDropdownCell = null;
+        activeDropdownIndex = -1;
+      }
+
+      function renderDropdownItems(items, currentVal) {
+        const listEl = document.getElementById('dropdownItemsList');
+        listEl.innerHTML = '';
+        filteredDropdownOptions = items;
+        activeDropdownIndex = -1;
+
+        if (items.length === 0) {
+          listEl.innerHTML = '<div class="dropdown-empty">No matching options found</div>';
           return;
         }
+
+        const normalizedCurrent = (currentVal || '').trim().toLowerCase();
+
+        items.forEach((item, idx) => {
+          const itemEl = document.createElement('div');
+          const isSelected = item.trim().toLowerCase() === normalizedCurrent;
+          itemEl.className = `dropdown-item ${isSelected ? 'selected' : ''}`;
+          itemEl.setAttribute('data-index', idx);
+          itemEl.innerHTML = `<span>${item}</span>${isSelected ? '<span class="dropdown-item-check">✓</span>' : ''}`;
+          itemEl.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            selectDropdownOption(item);
+          });
+          listEl.appendChild(itemEl);
+
+          if (isSelected && activeDropdownIndex === -1) {
+            activeDropdownIndex = idx;
+          }
+        });
+
+        if (activeDropdownIndex >= 0) {
+          const selectedEl = listEl.children[activeDropdownIndex];
+          if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      function filterDropdownOptions() {
+        if (!activeDropdownCell) return;
+        const q = document.getElementById('dropdownSearchInput').value.trim().toLowerCase();
+        const allOptions = getCellOptions(activeDropdownCell);
+        const filtered = allOptions.filter(opt => opt.toLowerCase().includes(q));
+        renderDropdownItems(filtered, getCellText(activeDropdownCell));
+      }
+
+      function handleDropdownKeydown(e) {
+        const listEl = document.getElementById('dropdownItemsList');
+        const items = listEl.querySelectorAll('.dropdown-item');
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (items.length === 0) return;
+          activeDropdownIndex = (activeDropdownIndex + 1) % items.length;
+          updateDropdownActiveItem(items);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (items.length === 0) return;
+          activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length;
+          updateDropdownActiveItem(items);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (activeDropdownIndex >= 0 && activeDropdownIndex < filteredDropdownOptions.length) {
+            selectDropdownOption(filteredDropdownOptions[activeDropdownIndex]);
+          } else if (filteredDropdownOptions.length > 0) {
+            selectDropdownOption(filteredDropdownOptions[0]);
+          }
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          closeDropdown();
+        }
+      }
+
+      function updateDropdownActiveItem(items) {
+        items.forEach((el, i) => {
+          if (i === activeDropdownIndex) {
+            el.classList.add('active');
+            el.scrollIntoView({ block: 'nearest' });
+          } else {
+            el.classList.remove('active');
+          }
+        });
+      }
+
+      function selectDropdownOption(value) {
+        if (!activeDropdownCell) return;
+        const cell = activeDropdownCell;
+        const oldVal = getCellText(cell);
+
+        closeDropdown();
+
+        if (oldVal === value) return;
+
+        renderCellContent(cell, value);
+        document.getElementById('formulaInput').value = value;
+        applyGreenConditionalFormatting();
+        saveCell(cell, oldVal, value);
+      }
+
+      // Cell Selection & Click Handlers
+      function handleCellClick(cell, event) {
+        if (cell.classList.contains('editing')) return;
+
+        if (cell.classList.contains('has-dropdown') || cell.hasAttribute('data-dropdown') || cell.hasAttribute('data-options')) {
+          selectCell(cell);
+          openDropdown(cell);
+          return;
+        }
+
+        closeDropdown();
+        selectCell(cell);
+      }
+
+      function selectCell(cell) {
+        if (!cell || cell.classList.contains('editing')) return;
 
         if (currentSelectedCell) {
           currentSelectedCell.classList.remove('selected');
@@ -878,49 +1184,25 @@
         const row = cell.getAttribute('data-row');
         const col = parseInt(cell.getAttribute('data-col'));
         const colLetter = getColLetter(col);
-        const rawVal = cell.getAttribute('data-raw') !== null ? cell.getAttribute('data-raw') : cell.textContent.trim();
+        const rawVal = getCellText(cell);
 
         document.getElementById('activeCellName').textContent = `${colLetter}${row}`;
         document.getElementById('formulaInput').value = rawVal;
       }
 
-      // Edit cell
+      // Edit Cell (Double Click or Enter)
       function startEdit(cell) {
         if (cell.classList.contains('editing') || cell.classList.contains('saving')) return;
 
+        closeDropdown();
         selectCell(cell);
-        const originalText = cell.getAttribute('data-raw') !== null ? cell.getAttribute('data-raw') : cell.textContent.trim();
+        const originalText = getCellText(cell);
         cell.classList.add('editing');
-
-        const optionsRaw = cell.getAttribute('data-options');
-        let options = [];
-        if (optionsRaw) {
-          try {
-            options = JSON.parse(optionsRaw);
-          } catch (e) {}
-        }
 
         cell.innerHTML = '';
         const input = document.createElement('input');
         input.type = 'text';
         input.value = originalText;
-
-        if (options && options.length > 0) {
-          const listId = `dl-${cell.getAttribute('data-row')}-${cell.getAttribute('data-col')}`;
-          input.setAttribute('list', listId);
-
-          const datalist = document.createElement('datalist');
-          datalist.id = listId;
-          options.forEach(opt => {
-            const opEl = document.createElement('option');
-            opEl.value = opt;
-            datalist.appendChild(opEl);
-          });
-          cell.appendChild(datalist);
-
-          // Save on dropdown selection
-          input.addEventListener('change', () => finish(true));
-        }
 
         cell.appendChild(input);
         input.focus();
@@ -943,13 +1225,13 @@
 
           renderCellContent(cell, newVal);
           document.getElementById('formulaInput').value = newVal;
+          applyGreenConditionalFormatting();
           saveCell(cell, originalText, newVal);
         }
 
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             finish(true);
-            // Move selection to cell below (just like Google Sheets)
             const nextRow = parseInt(cell.getAttribute('data-row')) + 1;
             const col = cell.getAttribute('data-col');
             const nextCell = document.querySelector(`td.grid-cell[data-row="${nextRow}"][data-col="${col}"]`);
@@ -957,7 +1239,6 @@
           } else if (e.key === 'Tab') {
             e.preventDefault();
             finish(true);
-            // Move selection to cell right (just like Google Sheets)
             const row = cell.getAttribute('data-row');
             const nextCol = parseInt(cell.getAttribute('data-col')) + 1;
             const nextCell = document.querySelector(`td.grid-cell[data-row="${row}"][data-col="${nextCol}"]`);
@@ -976,10 +1257,63 @@
         const val = document.getElementById('formulaInput').value;
 
         if (e.key === 'Enter') {
-          const oldVal = currentSelectedCell.getAttribute('data-raw') !== null ? currentSelectedCell.getAttribute('data-raw') : currentSelectedCell.textContent.trim();
+          const oldVal = getCellText(currentSelectedCell);
           renderCellContent(currentSelectedCell, val);
+          applyGreenConditionalFormatting();
           saveCell(currentSelectedCell, oldVal, val);
         }
+      }
+
+      // Conditional Formatting: Green Both Names (Column 3 <-> Column 11)
+      function applyGreenConditionalFormatting() {
+        const partyNames = new Set();
+        const ignored = new Set([
+          '', 'player', 'name', 'role', 'weapon', 'offhand', 'helmet', 'chestplate', 'boots (t7)',
+          'food', 'potion', 'cape (t7)', 'q', 'w', 'p', 'item', 'quantity', 'tier',
+          'total signed-up', 'disarray level', 'disarray calculator', 'party 1', 'party 2', 'party 3', 'party 4'
+        ]);
+
+        const partyCells = document.querySelectorAll('td.grid-cell[data-col="11"]');
+        partyCells.forEach(cell => {
+          const val = getCellText(cell).trim().toLowerCase();
+          if (val && !ignored.has(val)) {
+            partyNames.add(val);
+          }
+        });
+
+        const signupCells = [];
+        document.querySelectorAll('td.grid-cell[data-col="3"]').forEach(cell => {
+          const row = parseInt(cell.getAttribute('data-row') || '0');
+          if (row >= 7) {
+            signupCells.push(cell);
+          }
+        });
+
+        const matchedNames = new Set();
+        signupCells.forEach(cell => {
+          const val = getCellText(cell).trim().toLowerCase();
+          if (val && !ignored.has(val) && partyNames.has(val)) {
+            matchedNames.add(val);
+          }
+        });
+
+        signupCells.forEach(cell => {
+          const val = getCellText(cell).trim().toLowerCase();
+          if (val && matchedNames.has(val)) {
+            cell.classList.add('name-matched-green');
+          } else {
+            cell.classList.remove('name-matched-green');
+          }
+        });
+
+        partyCells.forEach(cell => {
+          const val = getCellText(cell).trim().toLowerCase();
+          if (val && matchedNames.has(val)) {
+            cell.classList.add('name-matched-green');
+          } else {
+            cell.classList.remove('name-matched-green');
+          }
+        });
       }
 
       // Save to Django & Google Sheets API
@@ -1006,12 +1340,14 @@
           if (res.ok && data.success) {
             cell.classList.add('save-success');
             renderCellContent(cell, newVal);
+            applyGreenConditionalFormatting();
             setStatus('☁ All changes saved to Drive');
             setTimeout(() => cell.classList.remove('save-success'), 1200);
           } else {
             cell.classList.add('save-error');
             renderCellContent(cell, oldVal);
             document.getElementById('formulaInput').value = oldVal;
+            applyGreenConditionalFormatting();
             setStatus('⚠️ Error saving change.');
             alert(data.error || 'Failed to update cell in Google Sheet.');
             setTimeout(() => cell.classList.remove('save-error'), 2000);
@@ -1021,6 +1357,7 @@
           cell.classList.add('save-error');
           renderCellContent(cell, oldVal);
           document.getElementById('formulaInput').value = oldVal;
+          applyGreenConditionalFormatting();
           setStatus('⚠️ Network error.');
           setTimeout(() => cell.classList.remove('save-error'), 2000);
         }
@@ -1029,6 +1366,9 @@
       // Keyboard arrow navigation
       window.addEventListener('keydown', (e) => {
         if (!currentSelectedCell || currentSelectedCell.classList.contains('editing')) return;
+        const menu = document.getElementById('sheetsDropdownMenu');
+        if (menu && menu.style.display !== 'none') return;
+
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
           e.preventDefault();
           const r = parseInt(currentSelectedCell.getAttribute('data-row'));
@@ -1042,7 +1382,11 @@
 
           if (target) selectCell(target);
         } else if (e.key === 'Enter') {
-          startEdit(currentSelectedCell);
+          if (currentSelectedCell.classList.contains('has-dropdown')) {
+            openDropdown(currentSelectedCell);
+          } else {
+            startEdit(currentSelectedCell);
+          }
         }
       });
 
@@ -1098,11 +1442,26 @@
         }
       }
 
+      // Close popover when clicking outside or scrolling viewport
+      document.addEventListener('click', (e) => {
+        const menu = document.getElementById('sheetsDropdownMenu');
+        if (!menu || menu.style.display === 'none') return;
+        if (!menu.contains(e.target) && !e.target.closest('.grid-cell.has-dropdown')) {
+          closeDropdown();
+        }
+      });
+
+      window.addEventListener('resize', closeDropdown);
+      const viewportEl = document.querySelector('.sheets-viewport');
+      if (viewportEl) {
+        viewportEl.addEventListener('scroll', closeDropdown);
+      }
+
       // Initialize on load
       window.addEventListener('DOMContentLoaded', () => {
         assignColumnLetters();
         formatAllCells();
-        // Keep initial state clean so formula bar does not display alarming URLs on load
+        applyGreenConditionalFormatting();
         document.getElementById('activeCellName').textContent = '';
         document.getElementById('formulaInput').value = '';
       });

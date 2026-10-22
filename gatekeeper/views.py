@@ -157,6 +157,7 @@ def sheet_dashboard_view(request):
         'grid_rows': data.get('grid_rows', []),
         'max_cols': data.get('max_cols', 26),
         'col_letters': data.get('col_letters', []),
+        'dropdown_presets_json': json.dumps(data.get('dropdown_presets', {})),
         'tabs': data.get('tabs', []),
         'active_tab_id': data.get('active_tab_id', ''),
         'active_tab_title': data.get('active_tab_title', ''),
