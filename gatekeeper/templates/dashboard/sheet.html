@@ -1264,39 +1264,72 @@
         }
       }
 
-      // Conditional Formatting: Green Both Names (Column 3 <-> Column 11)
+      // Conditional Formatting: Green Both Names (Signup List <-> Party Player)
       function applyGreenConditionalFormatting() {
-        const partyNames = new Set();
         const ignored = new Set([
-          '', 'player', 'name', 'role', 'weapon', 'offhand', 'helmet', 'chestplate', 'boots (t7)',
+          '', 'player', 'name', 'ingame', 'ingame name', 'role', 'weapon', 'offhand', 'helmet', 'chestplate', 'boots (t7)',
           'food', 'potion', 'cape (t7)', 'q', 'w', 'p', 'item', 'quantity', 'tier',
-          'total signed-up', 'disarray level', 'disarray calculator', 'party 1', 'party 2', 'party 3', 'party 4'
+          'total signed-up', 'disarray level', 'disarray calculator', 'party 1', 'party 2', 'party 3', 'party 4', 'fill', '0', '--'
         ]);
 
-        const partyCells = document.querySelectorAll('td.grid-cell[data-col="11"]');
-        partyCells.forEach(cell => {
-          const val = getCellText(cell).trim().toLowerCase();
-          if (val && !ignored.has(val)) {
-            partyNames.add(val);
+        // 1. Dynamically find all Player columns and Signup Name columns from grid headers
+        const playerCols = new Set();
+        const signupNameCols = new Set();
+
+        document.querySelectorAll('td.grid-cell').forEach(cell => {
+          const r = parseInt(cell.getAttribute('data-row') || '0');
+          const c = parseInt(cell.getAttribute('data-col') || '0');
+          const txt = getCellText(cell).trim().toLowerCase();
+
+          if (txt === 'player') {
+            playerCols.add(c);
+          } else if ((txt === 'name' || txt === 'ingame name' || txt === 'ingame') && r <= 6 && c <= 4) {
+            signupNameCols.add(c);
           }
         });
 
+        if (playerCols.size === 0) {
+          playerCols.add(8);
+          playerCols.add(10);
+          playerCols.add(11);
+        }
+        if (signupNameCols.size === 0) {
+          signupNameCols.add(1);
+          signupNameCols.add(3);
+        }
+
+        // 2. Collect party names from all detected player columns
+        const partyNames = new Set();
+        const partyCells = [];
+        playerCols.forEach(colIdx => {
+          document.querySelectorAll(`td.grid-cell[data-col="${colIdx}"]`).forEach(cell => {
+            const val = getCellText(cell).trim().toLowerCase();
+            if (val && !ignored.has(val)) {
+              partyNames.add(val);
+              partyCells.push(cell);
+            }
+          });
+        });
+
+        // 3. Collect signup cells and find matching names
         const signupCells = [];
-        document.querySelectorAll('td.grid-cell[data-col="1"], td.grid-cell[data-col="3"]').forEach(cell => {
-          const row = parseInt(cell.getAttribute('data-row') || '0');
-          if (row >= 5) {
-            signupCells.push(cell);
-          }
-        });
-
         const matchedNames = new Set();
-        signupCells.forEach(cell => {
-          const val = getCellText(cell).trim().toLowerCase();
-          if (val && !ignored.has(val) && partyNames.has(val)) {
-            matchedNames.add(val);
-          }
+        signupNameCols.forEach(colIdx => {
+          document.querySelectorAll(`td.grid-cell[data-col="${colIdx}"]`).forEach(cell => {
+            const r = parseInt(cell.getAttribute('data-row') || '0');
+            if (r >= 4) {
+              const val = getCellText(cell).trim().toLowerCase();
+              if (val && !ignored.has(val)) {
+                signupCells.push(cell);
+                if (partyNames.has(val)) {
+                  matchedNames.add(val);
+                }
+              }
+            }
+          });
         });
 
+        // 4. Highlight matched signup cells
         signupCells.forEach(cell => {
           const val = getCellText(cell).trim().toLowerCase();
           if (val && matchedNames.has(val)) {
@@ -1306,6 +1339,7 @@
           }
         });
 
+        // 5. Highlight matched party player cells
         partyCells.forEach(cell => {
           const val = getCellText(cell).trim().toLowerCase();
           if (val && matchedNames.has(val)) {

@@ -454,34 +454,52 @@ def get_sheet_data(force_refresh=False, gid=None):
                     })
                 grid_rows.append(row_cells)
 
-        # Apply Google Sheets Conditional Formatting: Green both names (Signup List Col A/C <-> Party Player Col K)
+        # Apply Google Sheets Conditional Formatting: Green both names (Signup List <-> Party Player)
+        party_player_cols = set()
+        signup_name_cols = set()
+
+        for r_idx in range(min(15, len(grid_rows))):
+            for cell in grid_rows[r_idx]:
+                v = cell.get('val', '').strip().lower()
+                c = cell.get('col')
+                if v == 'player':
+                    party_player_cols.add(c)
+                elif v in ('name', 'ingame', 'ingame name') and c <= 4:
+                    signup_name_cols.add(c)
+
+        if not party_player_cols:
+            party_player_cols = {8, 10, 11}
+        if not signup_name_cols:
+            signup_name_cols = {1, 3}
+
         party_names = set()
         for row in grid_rows:
             for cell in row:
-                if cell.get('col') == 11:
+                if cell.get('col') in party_player_cols:
                     v = cell.get('val', '').strip().lower()
-                    if v and v not in ('player', 'weapon', 'offhand', 'role', 'name'):
+                    if v and v not in ('player', 'weapon', 'offhand', 'role', 'name', '0', '--', 'fill'):
                         party_names.add(v)
 
         signup_names = set()
         for row in grid_rows:
             for cell in row:
-                if cell.get('col') in (1, 3):
+                if cell.get('col') in signup_name_cols:
                     v = cell.get('val', '').strip().lower()
-                    if v and v not in ('name', 'ingame', 'ingame name', 'disarray calculator', 'total signed-up', 'disarray level'):
+                    if v and v not in ('name', 'ingame', 'ingame name', 'disarray calculator', 'total signed-up', 'disarray level', 'fill', '0'):
                         signup_names.add(v)
 
         matched_names = party_names.intersection(signup_names)
+        highlight_cols = party_player_cols.union(signup_name_cols)
+
         for row in grid_rows:
             for cell in row:
-                if cell.get('col') in (1, 3, 11):
+                if cell.get('col') in highlight_cols:
                     v = cell.get('val', '').strip().lower()
                     if v and v in matched_names:
                         cell['is_green_matched'] = True
                         cell['bg'] = 'rgb(183,225,205)'
                         cell['fg'] = 'rgb(13,101,45)'
                         cell['bold'] = True
-
         headers = [c['val'] for c in grid_rows[0]] if grid_rows else []
         raw_rows = [[c['val'] for c in r] for r in grid_rows[1:]] if len(grid_rows) > 1 else []
         col_letters = [get_col_letter(i + 1) for i in range(max_cols)]
