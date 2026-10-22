@@ -372,6 +372,46 @@ class DropdownAndFormattingTests(TestCase):
         self.assertTrue(col8_cell.get('is_green_matched'))
         self.assertEqual(col1_cell.get('bg'), 'rgb(183,225,205)')
         self.assertEqual(col8_cell.get('bg'), 'rgb(183,225,205)')
+    @patch('gatekeeper.services.get_gspread_client')
+    def test_unmatched_player_slot_reverts_to_grey(self, mock_get_client):
+        """Unmatched player slot or empty slot in party roster should revert to grey rgb(183,183,183)."""
+        mock_gc = MagicMock()
+        mock_worksheet = MagicMock()
+        mock_worksheet.id = '123'
+        mock_worksheet.title = 'CTA Sheet'
+        mock_worksheet.row_count = 10
+        mock_worksheet.col_count = 15
+
+        grid_data = [
+            ['Name', 'Priority 1', 'Priority 2', 'Priority 3', '', 'Role', 'Weapon', 'Player'],
+            ['Dare', 'Golem', 'Perma', 'Spiked', '', 'Tank', 'Pole', ''], # Empty party slot
+        ]
+        mock_worksheet.get_all_values.return_value = grid_data
+
+        mock_spreadsheet = MagicMock()
+        mock_spreadsheet.title = 'CTA'
+        mock_spreadsheet.worksheets.return_value = [mock_worksheet]
+        mock_spreadsheet.sheet1 = mock_worksheet
+        mock_spreadsheet.worksheet.return_value = mock_worksheet
+        mock_spreadsheet.fetch_sheet_metadata.side_effect = Exception("No rich metadata")
+        mock_gc.open_by_key.return_value = mock_spreadsheet
+        mock_get_client.return_value = mock_gc
+
+        with override_settings(GOOGLE_SHEET_ID='test_sheet_id', MOCK_DISCORD_AUTH=False):
+            data = get_sheet_data(force_refresh=True)
+
+        data_row = data['grid_rows'][1]
+        col1_cell = next(c for c in data_row if c['col'] == 1) # Dare signup (unmatched)
+        col8_cell = next(c for c in data_row if c['col'] == 8) # Empty party slot
+
+        self.assertFalse(col1_cell.get('is_green_matched', False))
+        self.assertTrue(col1_cell.get('is_unmatched_player_slot'))
+        self.assertEqual(col1_cell.get('bg'), 'rgb(183,183,183)')
+
+        self.assertFalse(col8_cell.get('is_green_matched', False))
+        self.assertTrue(col8_cell.get('is_unmatched_player_slot'))
+        self.assertEqual(col8_cell.get('bg'), 'rgb(183,183,183)')
+
 
 
 

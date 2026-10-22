@@ -491,15 +491,24 @@ def get_sheet_data(force_refresh=False, gid=None):
         matched_names = party_names.intersection(signup_names)
         highlight_cols = party_player_cols.union(signup_name_cols)
 
+        ignored_headers = {'player', 'name', 'ingame', 'ingame name', 'role', 'weapon', 'offhand', 'disarray calculator', 'total signed-up', 'disarray level'}
         for row in grid_rows:
             for cell in row:
-                if cell.get('col') in highlight_cols:
+                c = cell.get('col', 0)
+                if c in highlight_cols:
                     v = cell.get('val', '').strip().lower()
                     if v and v in matched_names:
                         cell['is_green_matched'] = True
+                        cell['is_unmatched_player_slot'] = False
                         cell['bg'] = 'rgb(183,225,205)'
                         cell['fg'] = 'rgb(13,101,45)'
                         cell['bold'] = True
+                    elif (c in party_player_cols and v != 'player') or (c in signup_name_cols and v and v not in ignored_headers):
+                        cell['is_green_matched'] = False
+                        cell['is_unmatched_player_slot'] = True
+                        cell['bg'] = 'rgb(183,183,183)'
+                        cell['fg'] = '#000000'
+                        cell['bold'] = False
         headers = [c['val'] for c in grid_rows[0]] if grid_rows else []
         raw_rows = [[c['val'] for c in r] for r in grid_rows[1:]] if len(grid_rows) > 1 else []
         col_letters = [get_col_letter(i + 1) for i in range(max_cols)]

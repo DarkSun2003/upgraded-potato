@@ -432,6 +432,13 @@
         font-weight: bold !important;
       }
 
+      /* Google Sheets Conditional Formatting: Unmatched Player & Signup Slots (Revert to Grey) */
+      td.grid-cell.player-slot-unmatched {
+        background-color: #b7b7b7 !important;
+        color: #202124 !important;
+        font-weight: normal !important;
+      }
+
       /* Google Sheets Dropdown Cell & Trigger */
       td.grid-cell.has-dropdown {
         position: relative;
@@ -825,7 +832,7 @@
             <td class="row-header">{{ forloop.counter }}</td>
             {% for cell in row %}
             <td
-              class="grid-cell {% if cell.has_options %}has-dropdown{% endif %} {% if cell.is_green_matched %}name-matched-green{% endif %}"
+              class="grid-cell {% if cell.has_options %}has-dropdown{% endif %} {% if cell.is_green_matched %}name-matched-green{% elif cell.is_unmatched_player_slot %}player-slot-unmatched{% endif %}"
               data-row="{{ cell.row }}"
               data-col="{{ cell.col }}"
               {% if cell.colspan > 1 %}colspan="{{ cell.colspan }}"{% endif %}
@@ -1298,29 +1305,32 @@
           signupNameCols.add(3);
         }
 
-        // 2. Collect party names from all detected player columns
+        // 2. Collect party names and track ALL party player cells (even if empty)
         const partyNames = new Set();
         const partyCells = [];
         playerCols.forEach(colIdx => {
           document.querySelectorAll(`td.grid-cell[data-col="${colIdx}"]`).forEach(cell => {
-            const val = getCellText(cell).trim().toLowerCase();
-            if (val && !ignored.has(val)) {
-              partyNames.add(val);
+            const r = parseInt(cell.getAttribute('data-row') || '0');
+            if (r >= 5) {
               partyCells.push(cell);
+              const val = getCellText(cell).trim().toLowerCase();
+              if (val && !ignored.has(val)) {
+                partyNames.add(val);
+              }
             }
           });
         });
 
-        // 3. Collect signup cells and find matching names
+        // 3. Collect signup cells (even if empty) and find matching names
         const signupCells = [];
         const matchedNames = new Set();
         signupNameCols.forEach(colIdx => {
           document.querySelectorAll(`td.grid-cell[data-col="${colIdx}"]`).forEach(cell => {
             const r = parseInt(cell.getAttribute('data-row') || '0');
-            if (r >= 4) {
+            if (r >= 5) {
+              signupCells.push(cell);
               const val = getCellText(cell).trim().toLowerCase();
               if (val && !ignored.has(val)) {
-                signupCells.push(cell);
                 if (partyNames.has(val)) {
                   matchedNames.add(val);
                 }
@@ -1329,23 +1339,39 @@
           });
         });
 
-        // 4. Highlight matched signup cells
+        // 4. Highlight or revert signup cells to grey (#b7b7b7)
         signupCells.forEach(cell => {
           const val = getCellText(cell).trim().toLowerCase();
           if (val && matchedNames.has(val)) {
+            cell.classList.remove('player-slot-unmatched');
             cell.classList.add('name-matched-green');
+            cell.style.backgroundColor = '#b7e1cd';
+            cell.style.color = '#0d652d';
+            cell.style.fontWeight = 'bold';
           } else {
             cell.classList.remove('name-matched-green');
+            cell.classList.add('player-slot-unmatched');
+            cell.style.backgroundColor = '#b7b7b7';
+            cell.style.color = '#202124';
+            cell.style.fontWeight = 'normal';
           }
         });
 
-        // 5. Highlight matched party player cells
+        // 5. Highlight or revert party player cells to grey (#b7b7b7)
         partyCells.forEach(cell => {
           const val = getCellText(cell).trim().toLowerCase();
           if (val && matchedNames.has(val)) {
+            cell.classList.remove('player-slot-unmatched');
             cell.classList.add('name-matched-green');
+            cell.style.backgroundColor = '#b7e1cd';
+            cell.style.color = '#0d652d';
+            cell.style.fontWeight = 'bold';
           } else {
             cell.classList.remove('name-matched-green');
+            cell.classList.add('player-slot-unmatched');
+            cell.style.backgroundColor = '#b7b7b7';
+            cell.style.color = '#202124';
+            cell.style.fontWeight = 'normal';
           }
         });
       }
