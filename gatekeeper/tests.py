@@ -296,3 +296,45 @@ class DropdownAndFormattingTests(TestCase):
         self.assertEqual(col3_cell.get('bg'), 'rgb(183,225,205)')
         self.assertEqual(col11_cell.get('bg'), 'rgb(183,225,205)')
 
+    @patch('gatekeeper.services.get_gspread_client')
+    def test_dropdowns_only_on_weapon_columns_b_to_d_not_e_and_f(self, mock_get_client):
+        """Dropdowns should only be applied to columns B to D when headers designate B-D, not E and F."""
+        mock_gc = MagicMock()
+        mock_worksheet = MagicMock()
+        mock_worksheet.id = '123'
+        mock_worksheet.title = 'CTA Sheet'
+        mock_worksheet.row_count = 10
+        mock_worksheet.col_count = 10
+
+        grid_data = [
+            ['Name', 'Priority 1', 'Priority 2', 'Priority 3', 'Notes', 'Role'], # Row 1 (Header)
+            ['Player1', 'Perma', 'Golem', 'Spiked', 'Some note', 'DPS'],       # Row 2 (Data)
+        ]
+        mock_worksheet.get_all_values.return_value = grid_data
+
+        mock_spreadsheet = MagicMock()
+        mock_spreadsheet.title = 'CTA'
+        mock_spreadsheet.worksheets.return_value = [mock_worksheet]
+        mock_spreadsheet.sheet1 = mock_worksheet
+        mock_spreadsheet.worksheet.return_value = mock_worksheet
+        mock_spreadsheet.fetch_sheet_metadata.side_effect = Exception("No rich metadata")
+        mock_gc.open_by_key.return_value = mock_spreadsheet
+        mock_get_client.return_value = mock_gc
+
+        with override_settings(GOOGLE_SHEET_ID='test_sheet_id', MOCK_DISCORD_AUTH=False):
+            data = get_sheet_data(force_refresh=True)
+
+        data_row = data['grid_rows'][1]
+        col_b = next(c for c in data_row if c['col'] == 2) # Col B
+        col_c = next(c for c in data_row if c['col'] == 3) # Col C
+        col_d = next(c for c in data_row if c['col'] == 4) # Col D
+        col_e = next(c for c in data_row if c['col'] == 5) # Col E
+        col_f = next(c for c in data_row if c['col'] == 6) # Col F
+
+        self.assertTrue(col_b.get('has_options'))
+        self.assertTrue(col_c.get('has_options'))
+        self.assertTrue(col_d.get('has_options'))
+        self.assertFalse(col_e.get('has_options'))
+        self.assertFalse(col_f.get('has_options'))
+
+

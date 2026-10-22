@@ -1282,9 +1282,9 @@
         });
 
         const signupCells = [];
-        document.querySelectorAll('td.grid-cell[data-col="3"]').forEach(cell => {
+        document.querySelectorAll('td.grid-cell[data-col="1"], td.grid-cell[data-col="3"]').forEach(cell => {
           const row = parseInt(cell.getAttribute('data-row') || '0');
-          if (row >= 7) {
+          if (row >= 5) {
             signupCells.push(cell);
           }
         });

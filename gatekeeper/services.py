@@ -341,6 +341,23 @@ def get_sheet_data(force_refresh=False, gid=None):
                             skip_set.add((r, c))
 
             rows_data = sheet_meta.get('data', [])[0].get('rowData', []) if sheet_meta.get('data') else []
+
+            # Dynamically identify signup weapon columns from headers and merges (e.g. Priority 1, 2, 3 or Weapon Selection)
+            signup_weapon_cols = set()
+            header_max_r_idx = 0
+            for r_idx in range(min(7, len(rows_data))):
+                vals = rows_data[r_idx].get('values', [])
+                for c_idx, cell in enumerate(vals):
+                    val = str(cell.get('formattedValue', '')).strip().lower()
+                    if any(k in val for k in ('priority 1', 'priority 2', 'priority 3', 'weapon selection')):
+                        header_max_r_idx = max(header_max_r_idx, r_idx)
+                        if (r_idx, c_idx) in merge_map:
+                            _, cspan = merge_map[(r_idx, c_idx)]
+                            for mc in range(c_idx, c_idx + cspan):
+                                signup_weapon_cols.add(mc)
+                        else:
+                            signup_weapon_cols.add(c_idx)
+
             for r_idx, r in enumerate(rows_data):
                 row_cells = []
                 vals = r.get('values', [])
@@ -356,18 +373,31 @@ def get_sheet_data(force_refresh=False, gid=None):
                     bold = tf.get('bold', False)
                     align = fmt.get('horizontalAlignment', '').lower()
                     val = cell.get('formattedValue', '')
-                    options = resolve_validation_options(cell.get('dataValidation', {}).get('condition'), spreadsheet)
+                    
+                    has_google_dv = bool(cell.get('dataValidation'))
+                    options = resolve_validation_options(cell.get('dataValidation', {}).get('condition'), spreadsheet) if has_google_dv else []
 
                     is_weapon_dropdown = False
-                    if options and any(opt in weapons_list for opt in options[:10]):
-                        is_weapon_dropdown = True
-                    elif (c_idx + 1) in (4, 5, 6) and (r_idx + 1) >= 7:
-                        is_weapon_dropdown = True
-                    elif options:
+                    options_json = ''
+
+                    if has_google_dv:
+                        # Cell has explicit data validation in Google Sheets
+                        if options and any(opt in weapons_list for opt in options[:10]):
+                            is_weapon_dropdown = True
+                        elif options:
+                            options_json = json.dumps(options)
+                        else:
+                            cond_val = cell.get('dataValidation', {}).get('condition', {}).get('values', [{}])[0].get('userEnteredValue', '')
+                            if 'weapon' in str(cond_val).lower() or c_idx in signup_weapon_cols:
+                                is_weapon_dropdown = True
+                            else:
+                                is_weapon_dropdown = True
+                    elif c_idx in signup_weapon_cols and r_idx > header_max_r_idx:
+                        # Match exact signup weapon columns identified from sheet header
                         is_weapon_dropdown = True
 
                     dropdown_type = 'weapons' if is_weapon_dropdown else ''
-                    has_options = is_weapon_dropdown or bool(options)
+                    has_options = is_weapon_dropdown or bool(options) or bool(options_json)
 
                     row_cells.append({
                         'row': r_idx + 1,
@@ -381,6 +411,7 @@ def get_sheet_data(force_refresh=False, gid=None):
                         'align': align,
                         'has_options': has_options,
                         'dropdown_type': dropdown_type,
+                        'options_json': options_json,
                     })
                 grid_rows.append(row_cells)
 
@@ -390,10 +421,23 @@ def get_sheet_data(force_refresh=False, gid=None):
         # Fallback if rich grid fetch failed or was empty
         if not grid_rows:
             all_values = target_worksheet.get_all_values()
+            signup_weapon_cols = set()
+            header_max_r_idx = 0
+            for r_idx in range(min(7, len(all_values))):
+                for c_idx, val in enumerate(all_values[r_idx]):
+                    v = str(val).strip().lower()
+                    if any(k in v for k in ('priority 1', 'priority 2', 'priority 3', 'weapon selection')):
+                        header_max_r_idx = max(header_max_r_idx, r_idx)
+                        signup_weapon_cols.add(c_idx)
+            if not signup_weapon_cols:
+                # Default to columns B, C, D (0-based indices 1, 2, 3)
+                signup_weapon_cols = {1, 2, 3}
+                header_max_r_idx = 2
+
             for r_idx, r in enumerate(all_values[:65]):
                 row_cells = []
                 for c_idx, val in enumerate(r[:26]):
-                    is_weapon = ((c_idx + 1) in (4, 5, 6) and (r_idx + 1) >= 7)
+                    is_weapon = (c_idx in signup_weapon_cols and r_idx > header_max_r_idx)
                     row_cells.append({
                         'row': r_idx + 1,
                         'col': c_idx + 1,
@@ -406,32 +450,33 @@ def get_sheet_data(force_refresh=False, gid=None):
                         'align': 'left',
                         'has_options': is_weapon,
                         'dropdown_type': 'weapons' if is_weapon else '',
+                        'options_json': '',
                     })
                 grid_rows.append(row_cells)
 
-        # Apply Google Sheets Conditional Formatting: Green both names (Signup List Col 3 <-> Party Player Col 11)
+        # Apply Google Sheets Conditional Formatting: Green both names (Signup List Col A/C <-> Party Player Col K)
         party_names = set()
         for row in grid_rows:
             for cell in row:
                 if cell.get('col') == 11:
                     v = cell.get('val', '').strip().lower()
-                    if v and v not in ('player', 'weapon', 'offhand', 'role'):
+                    if v and v not in ('player', 'weapon', 'offhand', 'role', 'name'):
                         party_names.add(v)
 
         signup_names = set()
         for row in grid_rows:
             for cell in row:
-                if cell.get('col') == 3:
+                if cell.get('col') in (1, 3):
                     v = cell.get('val', '').strip().lower()
-                    if v and v not in ('name', 'disarray calculator', 'total signed-up', 'disarray level'):
+                    if v and v not in ('name', 'ingame', 'ingame name', 'disarray calculator', 'total signed-up', 'disarray level'):
                         signup_names.add(v)
 
         matched_names = party_names.intersection(signup_names)
         for row in grid_rows:
             for cell in row:
-                if cell.get('col') in (3, 11):
+                if cell.get('col') in (1, 3, 11):
                     v = cell.get('val', '').strip().lower()
-                    if v in matched_names:
+                    if v and v in matched_names:
                         cell['is_green_matched'] = True
                         cell['bg'] = 'rgb(183,225,205)'
                         cell['fg'] = 'rgb(13,101,45)'
