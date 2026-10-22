@@ -312,9 +312,9 @@ def get_sheet_data(force_refresh=False, gid=None):
         grid_rows = []
         max_cols = 26
         try:
-            rc = getattr(target_worksheet, 'row_count', 65)
+            rc = getattr(target_worksheet, 'row_count', 130)
             cc = getattr(target_worksheet, 'col_count', 26)
-            max_r = min(int(rc) if str(rc).isdigit() else 65, 65)
+            max_r = min(int(rc) if str(rc).isdigit() else 130, 130)
             max_c = min(int(cc) if str(cc).isdigit() else 26, 26)
             range_str = f"'{target_worksheet.title}'!A1:{get_col_letter(max_c)}{max_r}"
 
@@ -434,7 +434,7 @@ def get_sheet_data(force_refresh=False, gid=None):
                 signup_weapon_cols = {1, 2, 3}
                 header_max_r_idx = 2
 
-            for r_idx, r in enumerate(all_values[:65]):
+            for r_idx, r in enumerate(all_values[:130]):
                 row_cells = []
                 for c_idx, val in enumerate(r[:26]):
                     is_weapon = (c_idx in signup_weapon_cols and r_idx > header_max_r_idx)
