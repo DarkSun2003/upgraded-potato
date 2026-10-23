@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover" />
     <title>Dungeoneers CTA — Google Sheets</title>
     <link rel="icon" type="image/x-icon" href="https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -787,7 +787,7 @@
 
       /* Mobile Responsive Styles (< 768px) */
       @media (max-width: 768px) {
-        * {
+        button, .toolbar-btn, .sheet-tab-btn, .dropdown-item, .cell-dropdown-trigger {
           touch-action: manipulation;
         }
 
@@ -1042,6 +1042,7 @@
             <span class="sheets-doc-title">{{ doc_title }}</span>
             <div class="sheets-save-status">
               <span id="saveStatusText">☁ All changes saved to Drive</span>
+              <span class="mobile-badge" style="background: #e6f4ea; color: #137333; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 12px; margin-left: 6px; border: 1px solid #ceead6; display: inline-flex; align-items: center; gap: 3px;">📱 Mobile v2.1</span>
             </div>
           </div>
           <div class="sheets-menu-row">
@@ -1400,11 +1401,13 @@
           itemEl.className = `dropdown-item ${isSelected ? 'selected' : ''}`;
           itemEl.setAttribute('data-index', idx);
           itemEl.innerHTML = `<span>${item}</span>${isSelected ? '<span class="dropdown-item-check">✓</span>' : ''}`;
-          itemEl.addEventListener('mousedown', (e) => {
+          const handleItemSelect = (e) => {
             e.preventDefault();
             e.stopPropagation();
             selectDropdownOption(item);
-          });
+          };
+          itemEl.addEventListener('pointerdown', handleItemSelect);
+          itemEl.addEventListener('click', handleItemSelect);
           listEl.appendChild(itemEl);
 
           if (isSelected && activeDropdownIndex === -1) {

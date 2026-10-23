@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotAllowed
 from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
 
 from .decorators import live_discord_role_required
 from .services import get_sheet_data, update_sheet_cell, add_sheet_row
@@ -127,6 +128,7 @@ def discord_callback(request):
     return redirect('sheet_dashboard')
 
 
+@never_cache
 @live_discord_role_required
 def sheet_dashboard_view(request):
     """Renders the Google Sheet data for verified members."""
