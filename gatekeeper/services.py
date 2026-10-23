@@ -290,9 +290,7 @@ def get_sheet_data(force_refresh=False, gid=None):
                 pass
 
         if not target_worksheet:
-            # Prefer the first non-reference tab (so members land directly on the main raid comp instead of 'Weapons List')
-            active_candidate = next((ws for ws in worksheets if ws.title.strip().lower() != 'weapons list'), None)
-            target_worksheet = active_candidate or (worksheets[0] if worksheets else spreadsheet.sheet1)
+            target_worksheet = worksheets[0] if worksheets else spreadsheet.sheet1
 
         active_gid_str = str(target_worksheet.id)
 

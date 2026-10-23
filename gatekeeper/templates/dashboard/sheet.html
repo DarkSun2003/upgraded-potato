@@ -624,67 +624,94 @@
         white-space: nowrap;
       }
 
-      /* Top Tab Strip (Prominent on Mobile & Desktop) */
-      .sheets-tabs-strip-top {
-        display: flex;
-        align-items: center;
-        background: #f1f3f4;
-        border-bottom: 1px solid #dadce0;
-        padding: 6px 10px;
-        flex-shrink: 0;
-        overflow: hidden;
-        gap: 6px;
-      }
-
-      .sheets-tabs-strip-top .tabs-scroll-container {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        overflow-x: auto;
-        white-space: nowrap;
-        scrollbar-width: none;
-        flex: 1;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .sheets-tabs-strip-top .tabs-scroll-container::-webkit-scrollbar {
-        display: none;
-      }
-
-      .sheet-tab-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
+      /* Sheets List Slide-Up Bottom Sheet (Google Sheets mobile style) */
+      .sheets-list-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
         background: #ffffff;
-        color: #3c4043;
-        border: 1px solid #dadce0;
-        border-radius: 16px;
-        padding: 5px 12px;
-        font-size: 12px;
-        font-weight: 500;
-        text-decoration: none;
-        flex-shrink: 0;
-        transition: all 0.15s ease;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.25);
+        max-height: 75vh;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        animation: slideUpBottom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        padding-bottom: env(safe-area-inset-bottom, 16px);
       }
 
-      .sheet-tab-pill:hover {
-        background: #e8eaed;
+      .sheets-list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px 10px 20px;
+        border-bottom: 1px solid #dadce0;
+      }
+
+      .sheets-list-title {
+        font-size: 17px;
+        font-weight: 600;
         color: #202124;
       }
 
-      .sheet-tab-pill.active {
-        background: #e6f4ea;
-        color: #0f9d58;
-        border-color: #0f9d58;
-        font-weight: 600;
-        box-shadow: 0 1px 3px rgba(15, 157, 88, 0.2);
+      .sheets-list-items {
+        overflow-y: auto;
+        max-height: 60vh;
+        -webkit-overflow-scrolling: touch;
       }
 
-      .tab-pill-active-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #0f9d58;
+      .sheets-list-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 20px;
+        border-bottom: 1px solid #f1f3f4;
+        text-decoration: none;
+        color: #202124;
+        font-size: 15px;
+        font-weight: 500;
+        transition: background 0.12s;
+      }
+
+      .sheets-list-item:active, .sheets-list-item:hover {
+        background: #f1f3f4;
+      }
+
+      .sheets-list-item.active {
+        color: #0f9d58;
+        background: #e6f4ea;
+        font-weight: 600;
+      }
+
+      .sheets-list-icon {
+        font-size: 16px;
+      }
+
+      .sheets-list-check {
+        margin-left: auto;
+        color: #0f9d58;
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .sheet-tab-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        color: #5f6368;
+        cursor: pointer;
+        font-size: 16px;
+        flex-shrink: 0;
+        transition: background 0.15s;
+      }
+
+      .sheet-tab-menu-btn:hover {
+        background: #e8eaed;
+        color: #202124;
       }
 
       /* Bottom Sheets Tab Bar */
@@ -1176,7 +1203,6 @@
             <span class="sheets-doc-title">{{ doc_title }}</span>
             <div class="sheets-save-status">
               <span id="saveStatusText">☁ All changes saved to Drive</span>
-              <span class="mobile-badge" style="background: #e6f4ea; color: #137333; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 12px; margin-left: 6px; border: 1px solid #ceead6; display: inline-flex; align-items: center; gap: 3px;">📱 Mobile v2.2 (Tabs &amp; Full Grid)</span>
             </div>
           </div>
           <div class="sheets-menu-row">
@@ -1223,26 +1249,6 @@
       <div class="toolbar-search">
         <span style="color: #5f6368; font-size: 13px;">🔍</span>
         <input type="text" id="gridFilter" placeholder="Filter rows..." onkeyup="filterGrid()" />
-      </div>
-    </div>
-
-    <!-- Top Tab Strip (Directly Visible on Mobile & Desktop) -->
-    <div class="sheets-tabs-strip-top">
-      <div class="tabs-scroll-container">
-        {% for tab in tabs %}
-        <a
-          href="?gid={{ tab.id }}"
-          class="sheet-tab-pill {% if tab.active %}active{% endif %}"
-          title="{{ tab.title }}"
-        >
-          <span>📋 {{ tab.title }}</span>
-          {% if tab.active %}<span class="tab-pill-active-dot"></span>{% endif %}
-        </a>
-        {% empty %}
-        <div class="sheet-tab-pill active">
-          <span>Sheet1</span>
-        </div>
-        {% endfor %}
       </div>
     </div>
 
@@ -1297,8 +1303,9 @@
 
     <!-- Bottom Tab Bar -->
     <div class="sheets-bottom-tabs">
+      <div class="sheet-tab-menu-btn" onclick="openSheetsListModal()" title="All Sheets">☰</div>
       <div class="sheet-tab-plus" onclick="openAddRowModal()" title="Add Row">＋</div>
-      <div class="tabs-scroll-container">
+      <div class="tabs-scroll-container" id="bottomTabsContainer">
         {% for tab in tabs %}
         <a
           href="?gid={{ tab.id }}"
@@ -1346,6 +1353,32 @@
             <button type="submit" class="btn-submit">Add to Sheet</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- All Sheets Slide-Up Bottom Sheet Modal -->
+    <div id="sheetsListModal" class="sheets-modal-backdrop" onclick="closeSheetsListModal()" style="display: none;">
+      <div class="sheets-list-sheet" onclick="event.stopPropagation()">
+        <div class="mobile-sheet-drag-handle"></div>
+        <div class="sheets-list-header">
+          <span class="sheets-list-title">Sheets</span>
+          <button type="button" class="dropdown-close-btn" onclick="closeSheetsListModal()" aria-label="Close">✕</button>
+        </div>
+        <div class="sheets-list-items">
+          {% for tab in tabs %}
+          <a href="?gid={{ tab.id }}" class="sheets-list-item {% if tab.active %}active{% endif %}">
+            <span class="sheets-list-icon">📄</span>
+            <span class="sheets-list-name">{{ tab.title }}</span>
+            {% if tab.active %}<span class="sheets-list-check">✓</span>{% endif %}
+          </a>
+          {% empty %}
+          <div class="sheets-list-item active">
+            <span class="sheets-list-icon">📄</span>
+            <span class="sheets-list-name">Sheet1</span>
+            <span class="sheets-list-check">✓</span>
+          </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
 
@@ -2015,9 +2048,7 @@
         document.getElementById('activeCellName').textContent = '';
         document.getElementById('formulaInput').value = '';
 
-        // Auto-scroll active tabs into view
-        const topActive = document.querySelector('.sheets-tabs-strip-top .sheet-tab-pill.active');
-        if (topActive) topActive.scrollIntoView({ block: 'nearest', inline: 'center' });
+        // Auto-scroll active tab into center view
         const bottomActive = document.querySelector('.sheets-bottom-tabs .sheet-tab-btn.active');
         if (bottomActive) bottomActive.scrollIntoView({ block: 'nearest', inline: 'center' });
       });
