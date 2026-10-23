@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Dungeoneers CTA — Google Sheets</title>
     <link rel="icon" type="image/x-icon" href="https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -737,6 +737,291 @@
       .btn-submit:hover {
         background: var(--sheets-green-hover);
       }
+    
+      /* Mobile Dropdown Backdrop */
+      .mobile-dropdown-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 9998;
+        display: none;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+
+      .mobile-sheet-drag-handle {
+        display: none;
+        width: 36px;
+        height: 4px;
+        background: #dadce0;
+        border-radius: 4px;
+        margin: 10px auto 4px auto;
+      }
+
+      .dropdown-header-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px 4px 16px;
+      }
+
+      .dropdown-header-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #202124;
+      }
+
+      .dropdown-close-btn {
+        background: #f1f3f4;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        font-size: 13px;
+        color: #5f6368;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Mobile Responsive Styles (< 768px) */
+      @media (max-width: 768px) {
+        * {
+          touch-action: manipulation;
+        }
+
+        /* Top Google Sheets Navbar */
+        .sheets-top-header {
+          padding: 6px 10px;
+          gap: 6px;
+        }
+
+        .sheets-app-icon {
+          width: 26px;
+          height: 26px;
+        }
+
+        .sheets-title-container {
+          gap: 8px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .sheets-doc-details {
+          min-width: 0;
+        }
+
+        .sheets-title-row {
+          gap: 6px;
+        }
+
+        .sheets-doc-title {
+          font-size: 14px;
+          line-height: 18px;
+          max-width: 130px;
+          padding: 1px 3px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .sheets-save-status {
+          font-size: 10px;
+          white-space: nowrap;
+        }
+
+        .sheets-menu-row {
+          display: none !important;
+        }
+
+        .discord-auth-pill {
+          padding: 3px 8px 3px 4px;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+
+        .discord-avatar {
+          width: 24px;
+          height: 24px;
+          font-size: 11px;
+        }
+
+        .discord-username {
+          font-size: 11px;
+          max-width: 70px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .discord-role-badge {
+          display: none;
+        }
+
+        .btn-sheets-logout {
+          font-size: 11px;
+          padding: 2px 4px;
+          margin-left: 2px;
+        }
+
+        /* Toolbar */
+        .sheets-toolbar {
+          padding: 4px 8px;
+          gap: 6px;
+        }
+
+        .sheets-toolbar span[style*="Double-click"] {
+          display: none !important;
+        }
+
+        .toolbar-divider {
+          display: none !important;
+        }
+
+        .toolbar-btn {
+          padding: 5px 8px;
+          font-size: 12px;
+        }
+
+        .toolbar-search {
+          flex: 1 1 100%;
+          margin-left: 0;
+          margin-top: 2px;
+          order: 3;
+        }
+
+        .toolbar-search input {
+          width: 100%;
+          font-size: 14px;
+          padding: 4px 6px;
+        }
+
+        /* Formula Bar */
+        .sheets-formula-bar {
+          padding: 4px 8px;
+          gap: 6px;
+        }
+
+        .cell-name-box {
+          width: 44px;
+          font-size: 11px;
+          padding-right: 4px;
+        }
+
+        .formula-input {
+          font-size: 15px;
+          padding: 2px 4px;
+        }
+
+        /* Spreadsheet Grid */
+        .sheets-viewport {
+          -webkit-overflow-scrolling: touch;
+        }
+
+        th.col-header {
+          height: 28px;
+          min-width: 105px;
+          font-size: 12px;
+        }
+
+        th.corner-cell, td.row-header {
+          width: 36px;
+          min-width: 36px;
+          max-width: 36px;
+          font-size: 11px;
+        }
+
+        td.grid-cell {
+          height: 35px; /* Larger finger-friendly tap height */
+          font-size: 13px;
+          padding: 0 6px;
+        }
+
+        /* Mobile inputs must be >= 16px to prevent iOS Safari auto-zoom */
+        td.grid-cell.editing input {
+          font-size: 16px !important;
+        }
+
+        .cell-dropdown-trigger {
+          width: 24px;
+          height: 24px;
+          font-size: 13px;
+          right: 2px;
+        }
+
+        /* Mobile Bottom Sheet Dropdown (< 650px) */
+        .sheets-dropdown-popover.mobile-bottom-sheet {
+          position: fixed !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          top: auto !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          max-height: 72vh !important;
+          border-radius: 20px 20px 0 0 !important;
+          box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.28) !important;
+          border: 1px solid #dadce0 !important;
+          border-bottom: none !important;
+          animation: slideUpBottom 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          padding-bottom: env(safe-area-inset-bottom, 14px) !important;
+        }
+
+        @keyframes slideUpBottom {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+
+        .sheets-dropdown-popover.mobile-bottom-sheet .mobile-sheet-drag-handle,
+        .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-header-bar {
+          display: flex !important;
+        }
+
+        .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-search-wrapper {
+          padding: 8px 16px !important;
+        }
+
+        .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-search-wrapper input {
+          font-size: 16px !important;
+          padding: 9px 14px !important;
+          border-radius: 8px !important;
+        }
+
+        .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-items-list {
+          max-height: 52vh !important;
+        }
+
+        .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-item {
+          padding: 12px 18px !important;
+          font-size: 15px !important;
+          min-height: 46px !important;
+          border-bottom: 1px solid #f1f3f4 !important;
+        }
+
+        /* Bottom Tab Bar */
+        .sheets-bottom-tabs {
+          height: 42px;
+          padding: 0 4px;
+        }
+
+        .sheet-tab-btn {
+          padding: 7px 12px;
+          font-size: 12px;
+          min-height: 34px;
+        }
+
+        .sheets-status-pill span:not(.pulse-dot) {
+          display: none;
+        }
+
+        /* Modal */
+        .sheets-modal {
+          max-width: 92%;
+          padding: 18px;
+        }
+      }
+
     </style>
   </head>
   <body>
@@ -909,10 +1194,18 @@
       </div>
     </div>
 
-    <!-- Floating Google Sheets Dropdown Popover Menu -->
+    <!-- Mobile Dropdown Backdrop Overlay -->
+    <div id="mobileDropdownBackdrop" class="mobile-dropdown-backdrop" onclick="closeDropdown()"></div>
+
+    <!-- Floating Google Sheets Dropdown Popover / Mobile Bottom Sheet Menu -->
     <div id="sheetsDropdownMenu" class="sheets-dropdown-popover" style="display: none;">
+      <div class="mobile-sheet-drag-handle"></div>
+      <div class="dropdown-header-bar">
+        <span class="dropdown-header-title">Select Weapon</span>
+        <button type="button" class="dropdown-close-btn" onclick="closeDropdown()" aria-label="Close">✕</button>
+      </div>
       <div class="dropdown-search-wrapper">
-        <input type="text" id="dropdownSearchInput" placeholder="Search weapons..." autocomplete="off" oninput="filterDropdownOptions()" onkeydown="handleDropdownKeydown(event)" />
+        <input type="text" id="dropdownSearchInput" placeholder="🔍 Search weapons..." autocomplete="off" oninput="filterDropdownOptions()" onkeydown="handleDropdownKeydown(event)" />
       </div>
       <div class="dropdown-items-list" id="dropdownItemsList">
         <!-- Rendered dynamically -->
@@ -1031,36 +1324,58 @@
 
         activeDropdownCell = cell;
         const menu = document.getElementById('sheetsDropdownMenu');
+        const backdrop = document.getElementById('mobileDropdownBackdrop');
         const searchInput = document.getElementById('dropdownSearchInput');
         searchInput.value = '';
 
-        const cellRect = cell.getBoundingClientRect();
-        const menuWidth = 260;
-        const menuMaxHeight = 300;
+        if (window.innerWidth <= 650) {
+          // Mobile Bottom Sheet Mode
+          menu.classList.add('mobile-bottom-sheet');
+          menu.style.left = '';
+          menu.style.top = '';
+          if (backdrop) backdrop.style.display = 'block';
+        } else {
+          // Desktop Anchored Popover Mode
+          menu.classList.remove('mobile-bottom-sheet');
+          if (backdrop) backdrop.style.display = 'none';
 
-        let left = cellRect.left;
-        let top = cellRect.bottom + 2;
+          const cellRect = cell.getBoundingClientRect();
+          const menuWidth = 260;
+          const menuMaxHeight = 300;
 
-        if (left + menuWidth > window.innerWidth) {
-          left = Math.max(10, window.innerWidth - menuWidth - 16);
+          let left = cellRect.left;
+          let top = cellRect.bottom + 2;
+
+          if (left + menuWidth > window.innerWidth) {
+            left = Math.max(10, window.innerWidth - menuWidth - 16);
+          }
+
+          if (top + menuMaxHeight > window.innerHeight) {
+            top = Math.max(10, cellRect.top - menuMaxHeight - 2);
+          }
+
+          menu.style.left = `${left}px`;
+          menu.style.top = `${top}px`;
         }
 
-        if (top + menuMaxHeight > window.innerHeight) {
-          top = Math.max(10, cellRect.top - menuMaxHeight - 2);
-        }
-
-        menu.style.left = `${left}px`;
-        menu.style.top = `${top}px`;
         menu.style.display = 'flex';
-
         renderDropdownItems(options, getCellText(cell));
-        searchInput.focus();
+
+        // Auto-focus on desktop; on mobile keep viewport stable unless user taps search
+        if (window.innerWidth > 650) {
+          searchInput.focus();
+        }
       }
 
       function closeDropdown() {
         const menu = document.getElementById('sheetsDropdownMenu');
         if (menu) {
           menu.style.display = 'none';
+          menu.classList.remove('mobile-bottom-sheet');
+        }
+        const backdrop = document.getElementById('mobileDropdownBackdrop');
+        if (backdrop) {
+          backdrop.style.display = 'none';
         }
         activeDropdownCell = null;
         activeDropdownIndex = -1;
@@ -1162,6 +1477,10 @@
         document.getElementById('formulaInput').value = value;
         applyGreenConditionalFormatting();
         saveCell(cell, oldVal, value);
+
+        if (window.navigator && window.navigator.vibrate) {
+          try { window.navigator.vibrate(25); } catch (e) {}
+        }
       }
 
       // Cell Selection & Click Handlers
@@ -1171,6 +1490,12 @@
         if (cell.classList.contains('has-dropdown') || cell.hasAttribute('data-dropdown') || cell.hasAttribute('data-options')) {
           selectCell(cell);
           openDropdown(cell);
+          return;
+        }
+
+        // On touch / mobile, tapping an already selected cell triggers edit mode
+        if (currentSelectedCell === cell) {
+          startEdit(cell);
           return;
         }
 
@@ -1511,10 +1836,18 @@
         }
       });
 
-      window.addEventListener('resize', closeDropdown);
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 650) {
+          closeDropdown();
+        }
+      });
       const viewportEl = document.querySelector('.sheets-viewport');
       if (viewportEl) {
-        viewportEl.addEventListener('scroll', closeDropdown);
+        viewportEl.addEventListener('scroll', () => {
+          if (window.innerWidth > 650) {
+            closeDropdown();
+          }
+        });
       }
 
       // Initialize on load
