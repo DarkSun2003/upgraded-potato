@@ -524,6 +524,9 @@
         overflow-y: auto;
         max-height: 250px;
         padding: 4px 0;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        overscroll-behavior: contain;
       }
 
       .dropdown-item {
@@ -943,7 +946,7 @@
 
       /* Mobile Responsive Styles (< 768px) */
       @media (max-width: 768px) {
-        button, .toolbar-btn, .sheet-tab-btn, .dropdown-item, .cell-dropdown-trigger {
+        button, .toolbar-btn, .sheet-tab-btn, .cell-dropdown-trigger {
           touch-action: manipulation;
         }
 
@@ -1148,14 +1151,19 @@
         }
 
         .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-items-list {
-          max-height: 52vh !important;
+          max-height: 55vh !important;
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          touch-action: pan-y !important;
+          overscroll-behavior: contain !important;
         }
 
         .sheets-dropdown-popover.mobile-bottom-sheet .dropdown-item {
-          padding: 12px 18px !important;
+          padding: 13px 18px !important;
           font-size: 15px !important;
-          min-height: 46px !important;
+          min-height: 48px !important;
           border-bottom: 1px solid #f1f3f4 !important;
+          touch-action: pan-y !important;
         }
 
         /* Bottom Tab Bar */
@@ -1588,13 +1596,10 @@
           itemEl.className = `dropdown-item ${isSelected ? 'selected' : ''}`;
           itemEl.setAttribute('data-index', idx);
           itemEl.innerHTML = `<span>${item}</span>${isSelected ? '<span class="dropdown-item-check">✓</span>' : ''}`;
-          const handleItemSelect = (e) => {
-            e.preventDefault();
+          itemEl.addEventListener('click', (e) => {
             e.stopPropagation();
             selectDropdownOption(item);
-          };
-          itemEl.addEventListener('pointerdown', handleItemSelect);
-          itemEl.addEventListener('click', handleItemSelect);
+          });
           listEl.appendChild(itemEl);
 
           if (isSelected && activeDropdownIndex === -1) {
