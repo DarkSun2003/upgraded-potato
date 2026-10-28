@@ -169,6 +169,13 @@
       <h2 class="ward-title">Sanctum Sealed</h2>
       <div class="ward-subtitle">Clearance Level Insufficient</div>
 
+      {% if denied_username %}
+        <div style="background: rgba(234, 67, 53, 0.12); border: 1px solid rgba(234, 67, 53, 0.35); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #f28b82; text-align: left;">
+          <div>Logged in Discord Account: <strong>@{{ denied_username }}</strong></div>
+          <div style="font-size: 11px; color: #9aa0a6; margin-top: 4px;">This account is not in the server or is missing the Guild Member / Alliance role.</div>
+        </div>
+      {% endif %}
+
       {% if messages %}
         {% for message in messages %}
         <div class="alert-box">{{ message }}</div>
@@ -181,12 +188,14 @@
         </p>
       {% endif %}
 
+      {% if discord_invite_url and discord_invite_url != 'https://discord.gg/your-invite-code' %}
       <a href="{{ discord_invite_url }}" class="btn-discord" target="_blank" rel="noopener noreferrer">
         Enter The Discord Citadel &#8594;
       </a>
+      {% endif %}
 
-      <a href="{% url 'discord_login' %}" class="retry-link">
-        ↻ Re-Authenticate Credentials
+      <a href="{% url 'discord_login' %}" class="retry-link" style="font-size: 0.85rem; font-weight: 500; color: #c5a059;">
+        ↻ Switch Account / Re-Authenticate
       </a>
     </div>
   </body>

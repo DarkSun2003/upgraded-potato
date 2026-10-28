@@ -111,7 +111,9 @@ def discord_callback(request):
     user_id = str(discord_user['id'])
 
     if not check_live_guild_membership(user_id):
-        messages.error(request, "Access denied: You must be in our Discord server and possess the required role.")
+        username = discord_user.get('username', 'Unknown')
+        request.session['denied_username'] = username
+        messages.error(request, f"Access denied: Account '@{username}' is not in the server or lacks the required guild role.")
         return redirect('access_denied')
 
     # Mitigate session fixation by cycling session key
@@ -231,7 +233,11 @@ def add_row_api(request):
 def access_denied(request):
     """Fallback view for unauthorized users."""
     invite_url = getattr(settings, 'DISCORD_INVITE_URL', 'https://discord.gg/your-invite-code')
-    return render(request, 'access_denied.html', {'discord_invite_url': invite_url})
+    denied_username = request.session.pop('denied_username', None)
+    return render(request, 'access_denied.html', {
+        'discord_invite_url': invite_url,
+        'denied_username': denied_username,
+    })
 
 
 def discord_logout(request):
