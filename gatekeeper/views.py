@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 
 from .decorators import live_discord_role_required
 from .services import get_sheet_data, update_sheet_cell, add_sheet_row
-from .auth_utils import check_live_guild_membership, check_live_guild_membership_detailed
+from .auth_utils import check_live_guild_membership, check_live_guild_membership_detailed, discord_request_with_backoff
 from .mock_discord import get_mock_user_profile
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def discord_callback(request):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
     try:
-        token_res = requests.post(token_url, data=token_data, headers=headers, timeout=10)
+        token_res = discord_request_with_backoff('POST', token_url, data=token_data, headers=headers, timeout=10)
     except requests.RequestException as e:
         logger.error("Network error exchanging Discord code: %s", e)
         messages.error(request, "Unable to communicate with Discord authentication service. Please try again.")
@@ -111,7 +111,8 @@ def discord_callback(request):
     access_token = token_res.json().get('access_token')
 
     try:
-        user_res = requests.get(
+        user_res = discord_request_with_backoff(
+            'GET',
             f"{DISCORD_API_BASE}/users/@me",
             headers={'Authorization': f"Bearer {access_token}"},
             timeout=10

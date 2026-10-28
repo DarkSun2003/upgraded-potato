@@ -1,3 +1,4 @@
+import time
 import logging
 import requests
 from django.conf import settings
@@ -7,6 +8,46 @@ from .mock_discord import get_mock_member_status
 logger = logging.getLogger(__name__)
 
 DISCORD_API_BASE = getattr(settings, 'DISCORD_API_BASE', 'https://discord.com/api/v10')
+
+
+def discord_request_with_backoff(method, url, max_retries=3, **kwargs):
+    """
+    Executes an HTTP request to Discord API with automated exponential backoff
+    and respect for the HTTP 429 Retry-After header.
+    """
+    timeout = kwargs.pop('timeout', 10)
+    response = None
+
+    for attempt in range(max_retries):
+        try:
+            if method.upper() == 'POST':
+                response = requests.post(url, timeout=timeout, **kwargs)
+            else:
+                response = requests.get(url, timeout=timeout, **kwargs)
+        except requests.RequestException as e:
+            if attempt == max_retries - 1:
+                raise
+            sleep_duration = 0.5 * (2 ** attempt)
+            logger.warning("Discord request network error on attempt %d: %s. Retrying in %.2fs", attempt + 1, e, sleep_duration)
+            time.sleep(sleep_duration)
+            continue
+
+        if response.status_code == 429 and attempt < max_retries - 1:
+            try:
+                err_data = response.json()
+                retry_after = err_data.get('retry_after') or response.headers.get('Retry-After')
+                wait_sec = float(retry_after) if retry_after else (0.5 * (2 ** attempt))
+            except Exception:
+                wait_sec = 0.5 * (2 ** attempt)
+
+            if wait_sec <= 5:
+                logger.warning("Discord 429 rate limit hit. Backing off for %.2fs before retry (attempt %d/%d)", wait_sec, attempt + 1, max_retries)
+                time.sleep(wait_sec)
+                continue
+
+        return response
+
+    return response
 
 
 def check_live_guild_membership_detailed(user_id, is_active_session=False):
@@ -55,7 +96,7 @@ def check_live_guild_membership_detailed(user_id, is_active_session=False):
     member_url = f"{DISCORD_API_BASE}/guilds/{guild_id}/members/{user_id}"
 
     try:
-        response = requests.get(member_url, headers=bot_headers, timeout=5)
+        response = discord_request_with_backoff('GET', member_url, headers=bot_headers, timeout=5)
     except requests.RequestException as e:
         logger.warning("Discord API request failed for user %s: %s", user_id, e)
         if is_active_session:
