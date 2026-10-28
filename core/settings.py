@@ -191,7 +191,7 @@ GOOGLE_CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_FILE')
 
 # Cache TTLs (in seconds)
 SHEET_CACHE_TTL = int(os.getenv('SHEET_CACHE_TTL', '300'))
-DISCORD_MEMBERSHIP_CACHE_TTL = int(os.getenv('DISCORD_MEMBERSHIP_CACHE_TTL', '60'))
+DISCORD_MEMBERSHIP_CACHE_TTL = int(os.getenv('DISCORD_MEMBERSHIP_CACHE_TTL', '300'))
 
 # Session security
 # 1. Expire when the user closes their browser

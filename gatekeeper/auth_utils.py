@@ -33,6 +33,11 @@ def check_live_guild_membership_detailed(user_id):
     if cached_status is not None:
         return cached_status, None if cached_status else "Access denied: Account lacks required guild roles or is not in the server."
 
+    # Prevent hammering Discord if global rate limit cooldown is active
+    cooldown = cache.get("discord_rate_limited_global")
+    if cooldown:
+        return False, f"Discord API is temporarily cooling down from too many requests. Please wait a moment before retrying."
+
     bot_token = getattr(settings, 'DISCORD_BOT_TOKEN', None)
     guild_id = getattr(settings, 'DISCORD_TARGET_GUILD_ID', None)
     allowed_roles = getattr(settings, 'ALLOWED_DISCORD_ROLES', set())
@@ -55,15 +60,16 @@ def check_live_guild_membership_detailed(user_id):
         user_roles = set(str(r) for r in member_data.get('roles', []))
         is_valid = bool(user_roles.intersection(allowed_roles))
 
-        ttl = getattr(settings, 'DISCORD_MEMBERSHIP_CACHE_TTL', 60)
-        cache.set(cache_key, is_valid, timeout=ttl if is_valid else 15)
+        # Default to 300s (5 minutes) for positive role check to eliminate rate limits
+        ttl = getattr(settings, 'DISCORD_MEMBERSHIP_CACHE_TTL', 300)
+        cache.set(cache_key, is_valid, timeout=ttl if is_valid else 30)
         if not is_valid:
             return False, "Access denied: Your Discord account is in the server, but does not possess the Guild Member or Alliance role."
         return True, None
 
     elif response.status_code == 404:
         logger.info("User %s is not in guild %s (404)", user_id, guild_id)
-        cache.set(cache_key, False, timeout=30)
+        cache.set(cache_key, False, timeout=60)
         return False, "Access denied: Your Discord account was not found in The Dungeoneers server. Please join the Discord server first."
 
     elif response.status_code == 401:
@@ -75,8 +81,15 @@ def check_live_guild_membership_detailed(user_id):
         return False, "Discord Permission Error (HTTP 403): The bot lacks permission to view server members. Ensure 'Server Members Intent' is toggled ON in the Discord Developer Portal."
 
     elif response.status_code == 429:
-        logger.warning("Discord API rate limited when checking user %s", user_id)
-        return False, "Discord API is currently rate limited. Please try again in a few moments."
+        try:
+            err_data = response.json()
+            retry_after = err_data.get('retry_after') or response.headers.get('Retry-After')
+            wait_sec = max(5, int(float(retry_after))) if retry_after else 30
+        except Exception:
+            wait_sec = 30
+        logger.warning("Discord API rate limited when checking user %s (retry_after: %ss)", user_id, wait_sec)
+        cache.set("discord_rate_limited_global", wait_sec, timeout=wait_sec)
+        return False, f"Discord API is currently cooling down ({wait_sec}s). Please wait before refreshing."
 
     logger.warning("Unexpected Discord status %s for user %s: %s", response.status_code, user_id, response.text)
     return False, f"Discord verification failed (status {response.status_code})."

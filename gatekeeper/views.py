@@ -90,7 +90,11 @@ def discord_callback(request):
             err_json = token_res.json()
             err_type = err_json.get('error', '')
             err_desc = err_json.get('error_description', '')
-            if err_type == 'invalid_client':
+            retry_after = err_json.get('retry_after') or token_res.headers.get('Retry-After')
+            if token_res.status_code == 429:
+                wait_sec = max(5, int(float(retry_after))) if retry_after else 30
+                detail = f"Discord rate-limited requests from Render's server (HTTP 429). Please wait {wait_sec} seconds before trying again."
+            elif err_type == 'invalid_client':
                 detail = "Invalid Client Secret. Please verify DISCORD_CLIENT_SECRET in Render."
             elif err_type == 'redirect_uri_mismatch':
                 detail = "Redirect URI mismatch. Please check DISCORD_REDIRECT_URI."
