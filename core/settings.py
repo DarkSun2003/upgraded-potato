@@ -19,7 +19,7 @@ load_dotenv(BASE_DIR / ".env")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = (os.getenv("SECRET_KEY") or "").strip().strip("'\"")
 if not SECRET_KEY:
     if DEBUG:
         SECRET_KEY = 'django-insecure-k338260#+_5(9_^a9!wvkt)n6%ndtl6a9f8$qzpkvdqr$)i5&%'
@@ -31,14 +31,14 @@ allowed_hosts_env = os.getenv("ALLOWED_HOSTS")
 if allowed_hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(",") if h.strip()]
 else:
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "dareirus-sheet.onrender.com"]
 
 # CSRF configuration
 csrf_trusted_env = os.getenv("CSRF_TRUSTED_ORIGINS")
 if csrf_trusted_env:
     CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_env.split(",") if origin.strip()]
 else:
-    CSRF_TRUSTED_ORIGINS = []
+    CSRF_TRUSTED_ORIGINS = ["https://dareirus-sheet.onrender.com"]
 
 # Automatically adapt to Render's dynamic service hostname (e.g. your-app.onrender.com)
 render_external_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
@@ -159,21 +159,28 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Discord & Google Configuration
-DISCORD_API_BASE = 'https://discord.com/api/v10'
-DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
-DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
-DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
-DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-DISCORD_TARGET_GUILD_ID = os.getenv('DISCORD_TARGET_GUILD_ID')
-DISCORD_INVITE_URL = os.getenv('DISCORD_INVITE_URL', 'https://discord.gg/your-invite-code')
+# Helper to cleanly get sanitized environment variables
+def get_clean_env(key, default=''):
+    val = os.getenv(key, default)
+    if val is None:
+        return default
+    return str(val).strip().strip("'\"")
 
-GUILD_MEMBER_ROLE_ID = os.getenv('DISCORD_GUILD_MEMBER_ROLE_ID')
-ALLIANCE_ROLE_ID = os.getenv('DISCORD_ALLIANCE_ROLE_ID')
+# Discord Configuration
+DISCORD_API_BASE = 'https://discord.com/api/v10'
+DISCORD_CLIENT_ID = get_clean_env('DISCORD_CLIENT_ID', '1562485285084856420')
+DISCORD_CLIENT_SECRET = get_clean_env('DISCORD_CLIENT_SECRET')
+DISCORD_REDIRECT_URI = get_clean_env('DISCORD_REDIRECT_URI', 'https://dareirus-sheet.onrender.com/auth/discord/callback/')
+DISCORD_BOT_TOKEN = get_clean_env('DISCORD_BOT_TOKEN')
+DISCORD_TARGET_GUILD_ID = get_clean_env('DISCORD_TARGET_GUILD_ID', '1437495042435453010')
+
+GUILD_MEMBER_ROLE_ID = get_clean_env('DISCORD_GUILD_MEMBER_ROLE_ID', '1446614080055152741')
+ALLIANCE_ROLE_ID = get_clean_env('DISCORD_ALLIANCE_ROLE_ID', '1452934591336677477')
+OFFICER_ROLE_ID = get_clean_env('DISCORD_OFFICER_ROLE_ID', '1437495748814966988')
 
 # Clean role list (filter out empty or None strings)
 ALLOWED_DISCORD_ROLES = {
-    str(r).strip() for r in [GUILD_MEMBER_ROLE_ID, ALLIANCE_ROLE_ID]
+    str(r).strip() for r in [GUILD_MEMBER_ROLE_ID, ALLIANCE_ROLE_ID, OFFICER_ROLE_ID]
     if r and str(r).strip() and str(r).strip().lower() != 'none'
 }
 

@@ -26,7 +26,7 @@ services:
         sync: false
       - key: DISCORD_ALLIANCE_ROLE_ID
         sync: false
-      - key: DISCORD_INVITE_URL
+      - key: DISCORD_OFFICER_ROLE_ID
         sync: false
       - key: GOOGLE_SHEET_ID
         sync: false

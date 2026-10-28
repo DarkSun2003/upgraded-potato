@@ -51,7 +51,7 @@ This project solves that problem with a **secure proxy architecture**:
    - `DISCORD_TARGET_GUILD_ID`: Your Discord server ID
    - `DISCORD_GUILD_MEMBER_ROLE_ID`: Role ID allowed access
    - `DISCORD_ALLIANCE_ROLE_ID`: Secondary role ID (optional)
-   - `DISCORD_INVITE_URL`: Server invite link (for unauthorized page)
+   - `DISCORD_OFFICER_ROLE_ID`: Officer role ID (optional)
    - `GOOGLE_SHEET_ID`: Your Google Sheet ID
    - `GOOGLE_CREDENTIALS_JSON`: The raw JSON string of your Google service account credentials
 6. In the **Discord Developer Portal**, add your redirect URI to **OAuth2 > Redirects**:

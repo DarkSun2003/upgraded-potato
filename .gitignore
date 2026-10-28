@@ -18,5 +18,8 @@ media/
 # Logs & Editor & Documents
 *.log
 *.docx
+*.jpeg
+*.jpg
+*.png
 .vscode/
 .idea/

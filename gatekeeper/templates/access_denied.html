@@ -106,7 +106,7 @@
         color: var(--text-secondary);
         font-size: 0.9rem;
         line-height: 1.6;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
       }
 
       .ward-message strong {
@@ -117,15 +117,17 @@
         background: rgba(244, 63, 94, 0.1);
         border: 1px solid rgba(244, 63, 94, 0.3);
         color: #fca5a5;
-        padding: 0.75rem 1rem;
+        padding: 0.85rem 1rem;
         border-radius: 8px;
         font-family: var(--font-mono);
-        font-size: 0.8rem;
+        font-size: 0.82rem;
+        line-height: 1.5;
         margin-bottom: 1.5rem;
         text-align: left;
+        word-break: break-word;
       }
 
-      .btn-discord {
+      .btn-action {
         display: block;
         width: 100%;
         padding: 0.85rem 1.25rem;
@@ -142,24 +144,10 @@
         transition: all 0.2s ease;
       }
 
-      .btn-discord:hover {
+      .btn-action:hover {
         background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
         box-shadow: 0 6px 22px rgba(230, 177, 92, 0.4);
         transform: translateY(-1px);
-      }
-
-      .retry-link {
-        display: inline-block;
-        margin-top: 1.25rem;
-        font-family: var(--font-mono);
-        color: var(--text-muted);
-        font-size: 0.78rem;
-        text-decoration: none;
-        transition: color 0.15s ease;
-      }
-
-      .retry-link:hover {
-        color: var(--gold-light);
       }
     </style>
   </head>
@@ -172,7 +160,6 @@
       {% if denied_username %}
         <div style="background: rgba(234, 67, 53, 0.12); border: 1px solid rgba(234, 67, 53, 0.35); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #f28b82; text-align: left;">
           <div>Logged in Discord Account: <strong>@{{ denied_username }}</strong></div>
-          <div style="font-size: 11px; color: #9aa0a6; margin-top: 4px;">This account is not in the server or is missing the Guild Member / Alliance role.</div>
         </div>
       {% endif %}
 
@@ -183,18 +170,12 @@
       {% else %}
         <p class="ward-message">
           The operations ledger of <strong>The Dungeoneers</strong> is protected. 
-          To gain access, you must be a verified member of our Discord server and possess the 
-          <strong>Guild Member</strong> or <strong>Alliance</strong> rank.
+          To gain access, you must be a verified member of our Discord server and possess an 
+          approved guild role (<strong>Guild Member</strong>, <strong>Alliance</strong>, or <strong>Officer</strong>).
         </p>
       {% endif %}
 
-      {% if discord_invite_url and discord_invite_url != 'https://discord.gg/your-invite-code' %}
-      <a href="{{ discord_invite_url }}" class="btn-discord" target="_blank" rel="noopener noreferrer">
-        Enter The Discord Citadel &#8594;
-      </a>
-      {% endif %}
-
-      <a href="{% url 'discord_login' %}" class="retry-link" style="font-size: 0.85rem; font-weight: 500; color: #c5a059;">
+      <a href="{% url 'discord_login' %}" class="btn-action">
         ↻ Switch Account / Re-Authenticate
       </a>
     </div>

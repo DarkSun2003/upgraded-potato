@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 
 from .decorators import live_discord_role_required
 from .services import get_sheet_data, update_sheet_cell, add_sheet_row
-from .auth_utils import check_live_guild_membership
+from .auth_utils import check_live_guild_membership, check_live_guild_membership_detailed
 from .mock_discord import get_mock_user_profile
 
 logger = logging.getLogger(__name__)
@@ -110,10 +110,14 @@ def discord_callback(request):
     discord_user = user_res.json()
     user_id = str(discord_user['id'])
 
-    if not check_live_guild_membership(user_id):
+    is_valid, reason = check_live_guild_membership_detailed(user_id)
+    if not is_valid:
         username = discord_user.get('username', 'Unknown')
         request.session['denied_username'] = username
-        messages.error(request, f"Access denied: Account '@{username}' is not in the server or lacks the required guild role.")
+        if reason:
+            messages.error(request, reason)
+        else:
+            messages.error(request, f"Access denied: Account '@{username}' is not in the server or lacks the required guild role.")
         return redirect('access_denied')
 
     # Mitigate session fixation by cycling session key
@@ -232,10 +236,8 @@ def add_row_api(request):
 
 def access_denied(request):
     """Fallback view for unauthorized users."""
-    invite_url = getattr(settings, 'DISCORD_INVITE_URL', 'https://discord.gg/your-invite-code')
     denied_username = request.session.pop('denied_username', None)
     return render(request, 'access_denied.html', {
-        'discord_invite_url': invite_url,
         'denied_username': denied_username,
     })
 

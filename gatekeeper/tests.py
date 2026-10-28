@@ -74,6 +74,27 @@ class GatekeeperAccessTests(TestCase):
         self.assertRedirects(response, reverse('access_denied'))
         self.assertNotIn('discord_user_id', self.client.session)
 
+    def test_access_denied_page_renders_without_invite_url(self):
+        """Access denied page renders cleanly without any invite URLs or buttons."""
+        response = self.client.get(reverse('access_denied'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Sanctum Sealed')
+        self.assertContains(response, 'Switch Account / Re-Authenticate')
+        self.assertNotContains(response, 'Enter The Discord Citadel')
+        self.assertNotContains(response, 'discord.gg')
+
+    @patch('gatekeeper.auth_utils.requests.get')
+    def test_detailed_membership_reports_401_bot_token_error(self, mock_discord_get):
+        """401 from Discord surfaces a clear bot token configuration error."""
+        from gatekeeper.auth_utils import check_live_guild_membership_detailed
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_discord_get.return_value = mock_response
+
+        is_valid, reason = check_live_guild_membership_detailed('999999')
+        self.assertFalse(is_valid)
+        self.assertIn('bot token is invalid', reason.lower())
+
 
 @override_settings(
     MOCK_DISCORD_AUTH=False,
