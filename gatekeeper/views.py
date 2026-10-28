@@ -86,7 +86,22 @@ def discord_callback(request):
 
     if token_res.status_code != 200:
         logger.error("Discord token exchange failed (%s): %s", token_res.status_code, token_res.text)
-        messages.error(request, "Failed to retrieve Discord authorization token.")
+        try:
+            err_json = token_res.json()
+            err_type = err_json.get('error', '')
+            err_desc = err_json.get('error_description', '')
+            if err_type == 'invalid_client':
+                detail = "Invalid Client Secret. Please verify DISCORD_CLIENT_SECRET in Render."
+            elif err_type == 'redirect_uri_mismatch':
+                detail = "Redirect URI mismatch. Please check DISCORD_REDIRECT_URI."
+            elif err_desc:
+                detail = f"{err_type}: {err_desc}"
+            else:
+                detail = token_res.text or f"HTTP {token_res.status_code}"
+        except Exception:
+            detail = f"HTTP {token_res.status_code}"
+
+        messages.error(request, f"Discord OAuth Authorization Failed: {detail}")
         return redirect('access_denied')
 
     access_token = token_res.json().get('access_token')
