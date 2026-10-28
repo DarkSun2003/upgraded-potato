@@ -195,10 +195,10 @@ DISCORD_MEMBERSHIP_CACHE_TTL = int(os.getenv('DISCORD_MEMBERSHIP_CACHE_TTL', '30
 
 # Session security
 # 1. Expire when the user closes their browser
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep logged in on mobile when switching apps
 
 # 2. Maximum Session Age ( 2 hours / 7200 seconds )
-SESSION_COOKIE_AGE = 7200
+SESSION_COOKIE_AGE = 604800  # 7 days persistent session to prevent frequent sign-outs
 
 # 3. Rolling Expiration: resets on every request
 SESSION_SAVE_EVERY_REQUEST = True

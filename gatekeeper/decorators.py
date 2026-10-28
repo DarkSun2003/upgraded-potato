@@ -3,7 +3,7 @@ from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.http import JsonResponse
-from .auth_utils import check_live_guild_membership
+from .auth_utils import check_live_guild_membership_detailed
 
 
 def live_discord_role_required(view_func):
@@ -26,14 +26,15 @@ def live_discord_role_required(view_func):
                 )
             return redirect('discord_login')
 
-        if not check_live_guild_membership(user_id):
+        is_valid, reason = check_live_guild_membership_detailed(user_id, is_active_session=True)
+        if not is_valid:
             request.session.flush()
             if is_api:
                 return JsonResponse(
-                    {'success': False, 'error': 'Access denied: You do not hold the required role in the Discord server.'},
+                    {'success': False, 'error': reason or 'Access denied: You do not hold the required role in the Discord server.'},
                     status=403
                 )
-            messages.error(request, "Access denied: You must hold the required role in the Discord server.")
+            messages.error(request, reason or "Access denied: You must hold the required role in the Discord server.")
             return redirect('access_denied')
 
         return view_func(request, *args, **kwargs)

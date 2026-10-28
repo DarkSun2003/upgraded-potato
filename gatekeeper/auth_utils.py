@@ -9,9 +9,11 @@ logger = logging.getLogger(__name__)
 DISCORD_API_BASE = getattr(settings, 'DISCORD_API_BASE', 'https://discord.com/api/v10')
 
 
-def check_live_guild_membership_detailed(user_id):
+def check_live_guild_membership_detailed(user_id, is_active_session=False):
     """
     Checks if a user is in the server and possesses an approved guild role.
+    If is_active_session is True, transient Discord API rate limits (429) or network
+    errors will not flush the user's session, applying a grace period.
     Returns: (is_valid: bool, reason: str or None)
     """
     if not user_id:
@@ -36,7 +38,10 @@ def check_live_guild_membership_detailed(user_id):
     # Prevent hammering Discord if global rate limit cooldown is active
     cooldown = cache.get("discord_rate_limited_global")
     if cooldown:
-        return False, f"Discord API is temporarily cooling down from too many requests. Please wait a moment before retrying."
+        if is_active_session:
+            logger.info("Discord rate limit active; extending grace period for active member %s", user_id)
+            return True, None
+        return False, f"Discord API is temporarily cooling down ({cooldown}s). Please wait before retrying."
 
     bot_token = getattr(settings, 'DISCORD_BOT_TOKEN', None)
     guild_id = getattr(settings, 'DISCORD_TARGET_GUILD_ID', None)
@@ -53,6 +58,8 @@ def check_live_guild_membership_detailed(user_id):
         response = requests.get(member_url, headers=bot_headers, timeout=5)
     except requests.RequestException as e:
         logger.warning("Discord API request failed for user %s: %s", user_id, e)
+        if is_active_session:
+            return True, None
         return False, "Network error communicating with Discord. Please try again."
 
     if response.status_code == 200:
@@ -60,7 +67,7 @@ def check_live_guild_membership_detailed(user_id):
         user_roles = set(str(r) for r in member_data.get('roles', []))
         is_valid = bool(user_roles.intersection(allowed_roles))
 
-        # Default to 300s (5 minutes) for positive role check to eliminate rate limits
+        # 300s (5 minutes) cache for verified members to eliminate rate limits
         ttl = getattr(settings, 'DISCORD_MEMBERSHIP_CACHE_TTL', 300)
         cache.set(cache_key, is_valid, timeout=ttl if is_valid else 30)
         if not is_valid:
@@ -68,6 +75,7 @@ def check_live_guild_membership_detailed(user_id):
         return True, None
 
     elif response.status_code == 404:
+        # User left, was kicked, or banned from guild -> revoke immediately
         logger.info("User %s is not in guild %s (404)", user_id, guild_id)
         cache.set(cache_key, False, timeout=60)
         return False, "Access denied: Your Discord account was not found in The Dungeoneers server. Please join the Discord server first."
@@ -89,17 +97,23 @@ def check_live_guild_membership_detailed(user_id):
             wait_sec = 30
         logger.warning("Discord API rate limited when checking user %s (retry_after: %ss)", user_id, wait_sec)
         cache.set("discord_rate_limited_global", wait_sec, timeout=wait_sec)
+
+        if is_active_session:
+            logger.info("Granting rate-limit grace period for active member %s", user_id)
+            cache.set(cache_key, True, timeout=wait_sec)
+            return True, None
+
         return False, f"Discord API is currently cooling down ({wait_sec}s). Please wait before refreshing."
 
     logger.warning("Unexpected Discord status %s for user %s: %s", response.status_code, user_id, response.text)
     return False, f"Discord verification failed (status {response.status_code})."
 
 
-def check_live_guild_membership(user_id):
+def check_live_guild_membership(user_id, is_active_session=False):
     """
     Checks if a user is still in the server and possesses 
     either the Guild Member or Alliance role.
     Backwards-compatible wrapper returning only boolean.
     """
-    is_valid, _ = check_live_guild_membership_detailed(user_id)
+    is_valid, _ = check_live_guild_membership_detailed(user_id, is_active_session=is_active_session)
     return is_valid

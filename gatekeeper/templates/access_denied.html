@@ -175,9 +175,44 @@
         </p>
       {% endif %}
 
-      <a href="{% url 'discord_login' %}" class="btn-action">
+      <a href="{% url 'discord_login' %}" class="btn-action" id="authBtn">
         ↻ Switch Account / Re-Authenticate
       </a>
     </div>
+
+    <script>
+      // Automatic backoff delay mechanism to respect Discord rate limits
+      document.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.querySelector('.alert-box');
+        const authBtn = document.getElementById('authBtn');
+        if (!alertBox || !authBtn) return;
+
+        const text = alertBox.textContent || '';
+        // Look for patterns like "30 seconds", "(30s)", etc.
+        const match = text.match(/(\d+)\s*(?:seconds|s\b)/i);
+        if (match) {
+          let seconds = parseInt(match[1], 10);
+          if (seconds > 0) {
+            authBtn.style.pointerEvents = 'none';
+            authBtn.style.opacity = '0.5';
+            authBtn.style.filter = 'grayscale(1)';
+            
+            const timer = setInterval(() => {
+              seconds--;
+              if (seconds <= 0) {
+                clearInterval(timer);
+                authBtn.style.pointerEvents = 'auto';
+                authBtn.style.opacity = '1';
+                authBtn.style.filter = 'none';
+                authBtn.innerHTML = '↻ Cooldown Complete — Click to Login';
+                authBtn.style.background = 'linear-gradient(135deg, #34d399, #059669)';
+              } else {
+                authBtn.innerHTML = `⏳ Discord Cooldown (${seconds}s remaining)...`;
+              }
+            }, 1000);
+          }
+        }
+      });
+    </script>
   </body>
 </html>
