@@ -215,11 +215,37 @@ def get_gspread_client():
     )
 
 
+def resolve_target_worksheet(spreadsheet, gid=None):
+    """
+    Resolves the worksheet to display or update.
+    If gid is specified, attempts to find the worksheet with that id.
+    Otherwise, defaults to the last worksheet in the spreadsheet (active CTA tab),
+    skipping reference sheets like 'Weapons List'.
+    """
+    worksheets = spreadsheet.worksheets()
+    if gid:
+        try:
+            target_gid_int = int(gid)
+            for ws in worksheets:
+                if ws.id == target_gid_int:
+                    return ws
+        except (ValueError, TypeError):
+            pass
+
+    # Guild CTA workflow: default to the last non-reference worksheet (newest CTA tab)
+    non_reference_sheets = [ws for ws in worksheets if ws.title.strip().lower() != 'weapons list']
+    if non_reference_sheets:
+        return non_reference_sheets[-1]
+    if worksheets:
+        return worksheets[-1]
+    return getattr(spreadsheet, 'sheet1', worksheets[0] if worksheets else None)
+
+
 def get_sheet_data(force_refresh=False, gid=None):
     """
     Retrieves sheet headers, rows, and all tab metadata.
     If gid is specified, loads that worksheet/tab.
-    Otherwise loads the first worksheet.
+    Otherwise loads the last worksheet (active CTA tab).
     Caches results per sheet and tab to minimize Google API quota usage.
     """
     # 1. Return sample data when local mocking is enabled
@@ -244,6 +270,9 @@ def get_sheet_data(force_refresh=False, gid=None):
                     'dropdown_type': 'weapons' if is_weapon else '',
                 })
             mock_grid.append(row_cells)
+        # Default to the last tab in mock mode when gid is not specified
+        mock_active_gid = str(gid) if gid is not None else '1431495942'
+        mock_active_title = 'Sheet1' if mock_active_gid == '0' else '21.10 Def Mire against Bolty'
         return {
             'doc_title': 'Dungeoneers',
             'headers': headers,
@@ -253,11 +282,11 @@ def get_sheet_data(force_refresh=False, gid=None):
             'col_letters': [get_col_letter(i + 1) for i in range(len(headers))],
             'dropdown_presets': {'weapons': DEFAULT_ALBION_WEAPONS},
             'tabs': [
-                {'id': '0', 'title': 'Sheet1', 'active': True},
-                {'id': '1431495942', 'title': '21.10 Def Mire against Bolty', 'active': False},
+                {'id': '0', 'title': 'Sheet1', 'active': (mock_active_gid == '0')},
+                {'id': '1431495942', 'title': '21.10 Def Mire against Bolty', 'active': (mock_active_gid == '1431495942')},
             ],
-            'active_tab_id': '0',
-            'active_tab_title': 'Sheet1',
+            'active_tab_id': mock_active_gid,
+            'active_tab_title': mock_active_title,
         }
 
     # 2. Check cache unless force_refresh is requested
@@ -278,17 +307,7 @@ def get_sheet_data(force_refresh=False, gid=None):
         doc_title = spreadsheet.title
         worksheets = spreadsheet.worksheets()
 
-        target_worksheet = None
-        if gid:
-            try:
-                target_gid_int = int(gid)
-                for ws in worksheets:
-                    if ws.id == target_gid_int:
-                        target_worksheet = ws
-                        break
-            except (ValueError, TypeError):
-                pass
-
+        target_worksheet = resolve_target_worksheet(spreadsheet, gid=gid)
         if not target_worksheet:
             target_worksheet = worksheets[0] if worksheets else spreadsheet.sheet1
 
@@ -533,6 +552,8 @@ def get_sheet_data(force_refresh=False, gid=None):
     # 4. Cache response
     ttl = getattr(settings, 'SHEET_CACHE_TTL', 300)
     cache.set(cache_key, data, timeout=ttl)
+    if gid is None and active_gid_str:
+        cache.set(f"{CACHE_KEY_SHEET}_{sheet_id}_{active_gid_str}", data, timeout=ttl)
     return data
 
 
@@ -572,20 +593,14 @@ def update_sheet_cell(row, col, value, gid=None):
 
     gc = get_gspread_client()
     spreadsheet = gc.open_by_key(sheet_id)
-
-    if gid:
-        try:
-            worksheet = spreadsheet.get_worksheet_by_id(int(gid))
-        except Exception:
-            worksheet = spreadsheet.sheet1
-    else:
-        worksheet = spreadsheet.sheet1
-
+    worksheet = resolve_target_worksheet(spreadsheet, gid=gid)
     worksheet.update_cell(row, col, str(value))
 
-    # Invalidate cache for this worksheet tab and default
+    # Invalidate cache for this worksheet tab, specific gid, and default
     cache.delete(f"{CACHE_KEY_SHEET}_{sheet_id}_{gid or 'default'}")
     cache.delete(f"{CACHE_KEY_SHEET}_{sheet_id}_default")
+    if hasattr(worksheet, 'id'):
+        cache.delete(f"{CACHE_KEY_SHEET}_{sheet_id}_{worksheet.id}")
     return True
 
 
@@ -611,19 +626,14 @@ def add_sheet_row(row_values, gid=None):
 
     gc = get_gspread_client()
     spreadsheet = gc.open_by_key(sheet_id)
-
-    if gid:
-        try:
-            worksheet = spreadsheet.get_worksheet_by_id(int(gid))
-        except Exception:
-            worksheet = spreadsheet.sheet1
-    else:
-        worksheet = spreadsheet.sheet1
-
+    worksheet = resolve_target_worksheet(spreadsheet, gid=gid)
     worksheet.append_row(string_values)
 
+    # Invalidate cache for this worksheet tab, specific gid, and default
     cache.delete(f"{CACHE_KEY_SHEET}_{sheet_id}_{gid or 'default'}")
     cache.delete(f"{CACHE_KEY_SHEET}_{sheet_id}_default")
+    if hasattr(worksheet, 'id'):
+        cache.delete(f"{CACHE_KEY_SHEET}_{sheet_id}_{worksheet.id}")
     return True
 
 

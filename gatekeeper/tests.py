@@ -451,6 +451,60 @@ class DropdownAndFormattingTests(TestCase):
         self.assertTrue(col8_cell.get('is_unmatched_player_slot'))
         self.assertEqual(col8_cell.get('bg'), 'rgb(183,183,183)')
 
+    @override_settings(MOCK_DISCORD_AUTH=True)
+    def test_mock_mode_defaults_to_last_tab(self):
+        """In mock mode, visiting without gid should default to the last tab."""
+        data = get_sheet_data()
+        self.assertEqual(data['active_tab_id'], '1431495942')
+        self.assertEqual(data['active_tab_title'], '21.10 Def Mire against Bolty')
+
+        # When gid is explicitly passed, it should load that tab
+        data_first = get_sheet_data(gid='0')
+        self.assertEqual(data_first['active_tab_id'], '0')
+        self.assertEqual(data_first['active_tab_title'], 'Sheet1')
+
+    @override_settings(MOCK_DISCORD_AUTH=False, GOOGLE_SHEET_ID='multi_tab_sheet')
+    @patch('gatekeeper.services.get_gspread_client')
+    def test_real_sheet_defaults_to_last_tab_skipping_reference(self, mock_get_client):
+        """In real sheets, visiting without gid defaults to the last CTA tab, ignoring Weapons List."""
+        from gatekeeper.services import resolve_target_worksheet
+
+        mock_gc = MagicMock()
+        ws_weapons = MagicMock()
+        ws_weapons.id = 1553463428
+        ws_weapons.title = 'Weapons List'
+
+        ws_cta1 = MagicMock()
+        ws_cta1.id = 101
+        ws_cta1.title = 'Old CTA'
+
+        ws_cta2 = MagicMock()
+        ws_cta2.id = 202
+        ws_cta2.title = 'Latest CTA 21:00'
+
+        mock_spreadsheet = MagicMock()
+        mock_spreadsheet.worksheets.return_value = [ws_weapons, ws_cta1, ws_cta2]
+        mock_spreadsheet.sheet1 = ws_weapons
+        mock_gc.open_by_key.return_value = mock_spreadsheet
+        mock_get_client.return_value = mock_gc
+
+        # Default resolution (no gid) should pick ws_cta2 (the last sheet)
+        resolved_default = resolve_target_worksheet(mock_spreadsheet, gid=None)
+        self.assertEqual(resolved_default.id, 202)
+        self.assertEqual(resolved_default.title, 'Latest CTA 21:00')
+
+        # Explicit gid resolution should pick requested sheet
+        resolved_explicit = resolve_target_worksheet(mock_spreadsheet, gid='101')
+        self.assertEqual(resolved_explicit.id, 101)
+        self.assertEqual(resolved_explicit.title, 'Old CTA')
+
+        # If Weapons List is accidentally last, it picks the last non-reference CTA sheet
+        mock_spreadsheet.worksheets.return_value = [ws_cta1, ws_cta2, ws_weapons]
+        resolved_skip_ref = resolve_target_worksheet(mock_spreadsheet, gid=None)
+        self.assertEqual(resolved_skip_ref.id, 202)
+        self.assertEqual(resolved_skip_ref.title, 'Latest CTA 21:00')
+
+
 
 
 

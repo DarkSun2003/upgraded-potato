@@ -1996,7 +1996,7 @@
         });
       }
 
-      // Modal
+      // Modals
       function openAddRowModal() {
         document.getElementById('addRowModal').style.display = 'flex';
       }
@@ -2004,6 +2004,24 @@
       function closeAddRowModal() {
         document.getElementById('addRowModal').style.display = 'none';
         document.getElementById('addRowForm').reset();
+      }
+
+      function openSheetsListModal() {
+        const modal = document.getElementById('sheetsListModal');
+        if (modal) {
+          modal.style.display = 'flex';
+          const activeItem = modal.querySelector('.sheets-list-item.active');
+          if (activeItem) {
+            activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+        }
+      }
+
+      function closeSheetsListModal() {
+        const modal = document.getElementById('sheetsListModal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
       }
 
       async function submitRowForm(e) {
@@ -2039,6 +2057,14 @@
       }
 
       // Close popover when clicking outside or scrolling viewport
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeDropdown();
+          closeAddRowModal();
+          closeSheetsListModal();
+        }
+      });
+
       document.addEventListener('click', (e) => {
         const menu = document.getElementById('sheetsDropdownMenu');
         if (!menu || menu.style.display === 'none') return;
@@ -2069,9 +2095,20 @@
         document.getElementById('activeCellName').textContent = '';
         document.getElementById('formulaInput').value = '';
 
-        // Auto-scroll active tab into center view
-        const bottomActive = document.querySelector('.sheets-bottom-tabs .sheet-tab-btn.active');
-        if (bottomActive) bottomActive.scrollIntoView({ block: 'nearest', inline: 'center' });
+        // Auto-scroll active tab into view in the bottom tabs bar
+        function scrollToActiveTab() {
+          const tabsContainer = document.getElementById('bottomTabsContainer');
+          const bottomActive = document.querySelector('.sheets-bottom-tabs .sheet-tab-btn.active');
+          if (tabsContainer && bottomActive) {
+            const scrollPos = bottomActive.offsetLeft - (tabsContainer.clientWidth / 2) + (bottomActive.clientWidth / 2);
+            tabsContainer.scrollTo({
+              left: Math.max(0, scrollPos),
+              behavior: 'smooth'
+            });
+          }
+        }
+        scrollToActiveTab();
+        setTimeout(scrollToActiveTab, 150);
       });
     </script>
   </body>
