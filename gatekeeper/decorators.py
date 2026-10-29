@@ -1,9 +1,27 @@
 # gatekeeper/decorators.py
 from functools import wraps
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.http import JsonResponse
 from .auth_utils import check_live_guild_membership_detailed
+
+SOCIAL_BOT_USER_AGENTS = (
+    'discordbot',
+    'twitterbot',
+    'facebookexternalhit',
+    'whatsapp',
+    'telegrambot',
+    'slackbot',
+    'linkedinbot',
+    'applebot',
+    'bingbot',
+    'googlebot',
+)
+
+
+def is_social_crawler(request):
+    ua = request.META.get('HTTP_USER_AGENT', '').lower()
+    return any(bot in ua for bot in SOCIAL_BOT_USER_AGENTS)
 
 
 def live_discord_role_required(view_func):
@@ -24,6 +42,8 @@ def live_discord_role_required(view_func):
                     {'success': False, 'error': 'Authentication required. Please log in via Discord.'},
                     status=401
                 )
+            if is_social_crawler(request):
+                return render(request, 'preview.html')
             return redirect('discord_login')
 
         is_valid, reason = check_live_guild_membership_detailed(user_id, is_active_session=True)

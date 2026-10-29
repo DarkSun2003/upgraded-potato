@@ -95,6 +95,17 @@ class GatekeeperAccessTests(TestCase):
         self.assertFalse(is_valid)
         self.assertIn('bot token is invalid', reason.lower())
 
+    def test_social_crawler_gets_opengraph_preview(self):
+        """Discordbot and social crawlers get 200 OK with OpenGraph embed tags."""
+        # Clear session to simulate unauthenticated crawler
+        self.client.session.flush()
+        response = self.client.get('/', HTTP_USER_AGENT='Mozilla/5.0 (compatible; Discordbot/2.0; +https://discord.app)')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'The Dungeoneers | Guild Tools')
+        self.assertContains(response, 'og:image')
+        self.assertContains(response, 'dungeoneers-banner.png')
+        self.assertContains(response, '#28502A')
+
 
 @override_settings(
     MOCK_DISCORD_AUTH=False,
