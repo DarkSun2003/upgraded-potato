@@ -3,25 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Dungeoneers | Guild Tools</title>
+    <title>{{ preview.title|default:"The Dungeoneers | Guild Tools" }}</title>
 
     <!-- Open Graph / Discord Embeds -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="The Dungeoneers | Guild Tools" />
-    <meta property="og:description" content="Guild management CTA signups for The Dungeoneers and alies in Albion Online." />
-    <meta property="og:image" content="https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png" />
+    <meta property="og:site_name" content="The Dungeoneers" />
+    <meta property="og:title" content="{{ preview.title|default:'The Dungeoneers | Guild Tools' }}" />
+    <meta property="og:description" content="{{ preview.description|default:'Guild management CTA signups for The Dungeoneers and alies in Albion Online.' }}" />
+    <meta property="og:image" content="{{ preview.image|default:'https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png' }}" />
+    <meta property="og:image:secure_url" content="{{ preview.image|default:'https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png' }}" />
     <meta property="og:url" content="https://dareirus-sheet.onrender.com/" />
-    <meta name="theme-color" content="#28502A" />
+    <meta name="theme-color" content="{{ preview.theme_color|default:'#28502A' }}" />
 
     <!-- Twitter Card / Large Discord Embed -->
-    <meta property="og:image:secure_url" content="https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="180" />
-    <meta property="og:image:height" content="180" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="The Dungeoneers | Guild Tools" />
-    <meta name="twitter:description" content="Guild management CTA signups for The Dungeoneers and alies in Albion Online." />
-    <meta name="twitter:image" content="https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ preview.title|default:'The Dungeoneers | Guild Tools' }}" />
+    <meta name="twitter:description" content="{{ preview.description|default:'Guild management CTA signups for The Dungeoneers and alies in Albion Online.' }}" />
+    <meta name="twitter:image" content="{{ preview.image|default:'https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png' }}" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -69,7 +67,8 @@
 
       .preview-banner {
         max-width: 100%;
-        height: auto;
+        max-height: 220px;
+        object-fit: cover;
         border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         margin-bottom: 1.5rem;
@@ -121,12 +120,12 @@
   <body>
     <div class="preview-card">
       <img
-        src="https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png"
-        alt="The Dungeoneers Banner"
+        src="{{ preview.image|default:'https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png' }}"
+        alt="The Dungeoneers"
         class="preview-banner"
       />
-      <h1 class="preview-title">The Dungeoneers</h1>
-      <p class="preview-desc">Guild management CTA signups for The Dungeoneers and alies in Albion Online.</p>
+      <h1 class="preview-title">{{ preview.title|default:"The Dungeoneers" }}</h1>
+      <p class="preview-desc">{{ preview.description|default:"Guild management CTA signups for The Dungeoneers and alies in Albion Online." }}</p>
       <a href="/auth/login/" class="btn-portal">Enter Guild Portal</a>
     </div>
   </body>

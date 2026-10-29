@@ -3,7 +3,7 @@ from functools import wraps
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.http import JsonResponse
-from .auth_utils import check_live_guild_membership_detailed
+from .auth_utils import check_live_guild_membership_detailed, get_guild_preview_data
 
 SOCIAL_BOT_USER_AGENTS = (
     'discordbot',
@@ -43,7 +43,8 @@ def live_discord_role_required(view_func):
                     status=401
                 )
             if is_social_crawler(request):
-                return render(request, 'preview.html')
+                preview_data = get_guild_preview_data()
+                return render(request, 'preview.html', {'preview': preview_data})
             return redirect('discord_login')
 
         is_valid, reason = check_live_guild_membership_detailed(user_id, is_active_session=True)

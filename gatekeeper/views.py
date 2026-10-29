@@ -11,9 +11,9 @@ from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotAll
 from django.views.decorators.http import require_POST
 from django.views.decorators.cache import never_cache
 
-from .decorators import live_discord_role_required
+from .decorators import live_discord_role_required, is_social_crawler
 from .services import get_sheet_data, update_sheet_cell, add_sheet_row
-from .auth_utils import check_live_guild_membership, check_live_guild_membership_detailed, discord_request_with_backoff
+from .auth_utils import check_live_guild_membership, check_live_guild_membership_detailed, discord_request_with_backoff, get_guild_preview_data
 from .mock_discord import get_mock_user_profile
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,9 @@ DISCORD_API_BASE = getattr(settings, 'DISCORD_API_BASE', 'https://discord.com/ap
 
 def discord_login(request):
     """Generates state and redirects to Discord login screen (or mocks it locally)."""
+    if is_social_crawler(request):
+        preview_data = get_guild_preview_data()
+        return render(request, 'preview.html', {'preview': preview_data})
     # If mocking is enabled, bypass redirecting to Discord entirely
     if getattr(settings, 'MOCK_DISCORD_AUTH', False):
         mock_user = get_mock_user_profile()
@@ -185,6 +188,7 @@ def sheet_dashboard_view(request):
         'grid_rows': data.get('grid_rows', []),
         'max_cols': data.get('max_cols', 26),
         'col_letters': data.get('col_letters', []),
+        'preview': get_guild_preview_data(),
         'dropdown_presets_json': json.dumps(data.get('dropdown_presets', {})),
         'tabs': data.get('tabs', []),
         'active_tab_id': data.get('active_tab_id', ''),
@@ -256,8 +260,10 @@ def add_row_api(request):
 
 def access_denied(request):
     """Fallback view for unauthorized users."""
+    preview_data = get_guild_preview_data()
     denied_username = request.session.pop('denied_username', None)
     return render(request, 'access_denied.html', {
+        'preview': preview_data,
         'denied_username': denied_username,
     })
 

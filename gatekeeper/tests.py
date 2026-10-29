@@ -95,15 +95,22 @@ class GatekeeperAccessTests(TestCase):
         self.assertFalse(is_valid)
         self.assertIn('bot token is invalid', reason.lower())
 
-    def test_social_crawler_gets_opengraph_preview(self):
+    @patch('gatekeeper.decorators.get_guild_preview_data')
+    def test_social_crawler_gets_opengraph_preview(self, mock_preview):
         """Discordbot and social crawlers get 200 OK with OpenGraph embed tags."""
-        # Clear session to simulate unauthenticated crawler
+        mock_preview.return_value = {
+            'title': 'The Dungeoneers | Guild Tools',
+            'description': 'Guild management CTA signups for The Dungeoneers and alies in Albion Online.',
+            'image': 'https://cdn.discordapp.com/icons/1437495042435453010/058302274c65d4abc1af045b00e9447c.png?size=512',
+            'url': 'https://dareirus-sheet.onrender.com/',
+            'theme_color': '#28502A',
+        }
         self.client.session.flush()
         response = self.client.get('/', HTTP_USER_AGENT='Mozilla/5.0 (compatible; Discordbot/2.0; +https://discord.app)')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'The Dungeoneers | Guild Tools')
         self.assertContains(response, 'og:image')
-        self.assertContains(response, 'dungeoneers-banner.png')
+        self.assertContains(response, 'cdn.discordapp.com')
         self.assertContains(response, '#28502A')
 
 

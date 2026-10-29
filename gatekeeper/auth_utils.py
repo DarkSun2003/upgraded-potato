@@ -50,6 +50,65 @@ def discord_request_with_backoff(method, url, max_retries=3, **kwargs):
     return response
 
 
+def get_guild_preview_data():
+    """
+    Retrieves the guild's current icon/banner and details from Discord or cache.
+    Ensures that whenever the Discord server logo or banner is changed on Discord,
+    it automatically reflects across all social media link embeds.
+    """
+    cache_key = "discord_guild_preview_data"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
+    default_image = getattr(settings, 'DISCORD_IMAGE_URL', 'https://i.ibb.co/Z6WgyHbJ/dungeoneers-banner.png')
+    data = {
+        'title': "The Dungeoneers | Guild Tools",
+        'description': "Guild management CTA signups for The Dungeoneers and alies in Albion Online.",
+        'image': default_image,
+        'url': "https://dareirus-sheet.onrender.com/",
+        'theme_color': "#28502A",
+    }
+
+    if getattr(settings, 'MOCK_DISCORD_AUTH', False):
+        return data
+
+    bot_token = getattr(settings, 'DISCORD_BOT_TOKEN', None)
+    guild_id = getattr(settings, 'DISCORD_TARGET_GUILD_ID', None)
+    if not bot_token or not guild_id:
+        return data
+
+    try:
+        headers = {'Authorization': f'Bot {bot_token}'}
+        res = discord_request_with_backoff('GET', f"{DISCORD_API_BASE}/guilds/{guild_id}", headers=headers, timeout=5)
+        if res.status_code == 200:
+            g = res.json()
+            guild_name = g.get('name') or "The Dungeoneers"
+            data['title'] = f"{guild_name} | Guild Tools"
+
+            banner_hash = g.get('banner')
+            splash_hash = g.get('splash')
+            icon_hash = g.get('icon')
+
+            # Discord CDN URLs: 100% reliable, fast, and trusted by Discord embeds
+            if banner_hash:
+                data['image'] = f"https://cdn.discordapp.com/banners/{guild_id}/{banner_hash}.png?size=1024"
+            elif splash_hash:
+                data['image'] = f"https://cdn.discordapp.com/splashes/{guild_id}/{splash_hash}.png?size=1024"
+            elif icon_hash:
+                data['image'] = f"https://cdn.discordapp.com/icons/{guild_id}/{icon_hash}.png?size=512"
+
+            if g.get('description'):
+                data['description'] = g.get('description')
+
+            # Cache preview data for 1 hour (3600s)
+            cache.set(cache_key, data, timeout=3600)
+    except Exception as e:
+        logger.warning("Could not fetch Discord guild preview data: %s", e)
+
+    return data
+
+
 def check_live_guild_membership_detailed(user_id, is_active_session=False):
     """
     Checks if a user is in the server and possesses an approved guild role.
